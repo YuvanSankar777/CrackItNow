@@ -1,0 +1,85 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+.venv/
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# Sentry
+.sentryclirc
+
+# VSCode
+.vscode/
+
+# IDEs
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Environments
+.env
+.env.*
+
+# MyPy
+.mypy_cache/
+
+# Pyre
+.pyre/
+
+# Celery
+celerybeat-schedule
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets
+secrets/
+
+# Docker
+docker-compose.override.yml
+
+# Add any other local files you don't want tracked below
+# e.g., local test data, temp files, editor backups
+
