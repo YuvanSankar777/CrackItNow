@@ -52,10 +52,21 @@ export const authAPI = {
 
 // ── Interviews ────────────────────────────────────────
 export const interviewAPI = {
-  start: (data) => api.post('/interviews/start/', data),
-  respond: (data) => api.post('/interviews/respond/', data),
-  codeUpdate: (data) => api.post('/interviews/code-update/', data),  evaluateCode: (data) => api.post('/interviews/execute-code/', data),  end: (data) => api.post('/interviews/end/', data),
-  results: (sessionId) => api.get(`/interviews/results/${sessionId}/`),
-  sessions: () => api.get('/interviews/sessions/'),
-  tts: (text) => api.post('/interviews/tts/', { text }),
+  start:         (data) => api.post('/interviews/start/', data),
+  respond:       (data) => api.post('/interviews/respond/', data),
+  codeUpdate:    (data) => api.post('/interviews/code-update/', data),
+  evaluateCode:  (data) => api.post('/interviews/execute-code/', {
+    source_code: data.source_code || data.code,
+    language_id: data.language_id || 63,
+    language:    data.language || 'javascript',
+    stdin:       data.stdin || '',
+    is_submission: data.is_submission || false,
+  }),
+  end:           (data) => api.post('/interviews/end/', data),
+  results:       (sessionId) => api.get(`/interviews/results/${sessionId}/`),
+  sessions:      () => api.get('/interviews/sessions/'),
+  tts:           (text) => api.post('/interviews/tts/', { text }),
+  dashboardStats:  () => api.get('/interviews/dashboard/stats/'),
+  dashboardStreak: () => api.get('/interviews/dashboard/streak/'),
 };
+

@@ -1,78 +1,94 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-const CameraPreview = ({ isFullscreen, onFullscreen }) => {
+const CameraPreview = ({ compact = false }) => {
   const videoRef = useRef(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
+  const streamRef = useRef(null);
+  const [state, setState] = useState('idle'); // idle | loading | active | error
+  const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 320 }, height: { ideal: 240 } },
-          audio: false,
-        });
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setIsCameraActive(true);
-          setCameraError(null);
-        }
-      } catch (err) {
-        console.error('Camera access denied:', err);
-        setCameraError('Camera not available');
-        setIsCameraActive(false);
+  const startCamera = useCallback(async () => {
+    setState('loading');
+    setErrorMsg('');
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
       }
-    };
-
-    initCamera();
-
-    return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        audio: false,
+      });
+      streamRef.current = stream;
+      // Must wait for next tick so videoRef.current is mounted
+      await new Promise((r) => setTimeout(r, 50));
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+        setState('active');
       }
-    };
+    } catch (err) {
+      console.error('Camera error:', err);
+      if (err.name === 'NotAllowedError') {
+        setErrorMsg('Camera permission denied. Please allow access.');
+      } else if (err.name === 'NotFoundError') {
+        setErrorMsg('No camera detected on this device.');
+      } else {
+        setErrorMsg(`Camera error: ${err.message}`);
+      }
+      setState('error');
+    }
   }, []);
 
-  if (!isCameraActive) {
-    return (
-      <div className={`flex items-center justify-center bg-theme-bg border-2 border-theme-border rounded-lg ${
-        isFullscreen ? 'floating-camera' : 'w-64 h-48'
-      }`}>
-        <div className="text-center p-4">
-          <svg className="w-12 h-12 mx-auto text-theme-text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <p className="text-xs text-theme-text-muted">{cameraError || 'Camera initializing...'}</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    startCamera();
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, [startCamera]);
+
+  const sizeClass = compact ? 'w-full h-full' : 'w-48 h-36';
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center bg-black rounded-lg overflow-hidden border-2 border-theme-accent ${
-        isFullscreen
-          ? 'floating-camera'
-          : 'w-64 h-48'
-      }`}
-    >
+    <div className={`${sizeClass} relative bg-black rounded-xl overflow-hidden border border-[#444]`}>
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover"
+        className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-300 ${state === 'active' ? 'opacity-100' : 'opacity-0'}`}
       />
-      <button
-        onClick={onFullscreen}
-        className="absolute bottom-2 right-2 p-1.5 bg-theme-accent hover:bg-blue-600 text-white rounded-full transition-all opacity-0 hover:opacity-100"
-        title="Toggle fullscreen"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6v4m12 0h4v-4m0 12h-4v4m-12 0H6v-4" />
-        </svg>
-      </button>
+
+      {/* Loading Overlay */}
+      {(state === 'loading' || state === 'idle') && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-2">
+          <div className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-500">Starting camera...</p>
+        </div>
+      )}
+
+      {/* Error Overlay */}
+      {state === 'error' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#111] gap-2 p-3 text-center">
+          <span className="text-2xl">📷</span>
+          <p className="text-[10px] text-gray-400 leading-relaxed">{errorMsg}</p>
+          <button onClick={startCamera} className="text-[10px] text-blue-400 hover:text-blue-300 underline">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Live indicator */}
+      {state === 'active' && (
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[9px] text-white font-mono">LIVE</span>
+        </div>
+      )}
     </div>
   );
 };

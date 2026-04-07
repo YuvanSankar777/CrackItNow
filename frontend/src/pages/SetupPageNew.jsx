@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { interviewAPI } from '../api/client';
 
 const SetupPageNew = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const company = location.state?.company || null;
   const [loading, setLoading] = useState(false);
   const [playingPreview, setPlayingPreview] = useState(null);
   const audioRef = useRef(null);
@@ -64,6 +66,8 @@ const SetupPageNew = () => {
   };
 
   const handleStart = async () => {
+    // Persist voice mode so InterviewPage picks it up
+    sessionStorage.setItem('voiceMode', config.aiVoice);
     setLoading(true);
     try {
       const { data } = await interviewAPI.start({
@@ -74,6 +78,7 @@ const SetupPageNew = () => {
         max_questions: 5,
         ai_voice: config.aiVoice,
         ai_gender: config.aiGender,
+        company: company,
       });
       navigate('/interview', { state: { session: data } });
     } catch (e) {
@@ -92,6 +97,7 @@ const SetupPageNew = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-theme-text">Interview Setup</h1>
+          {company && <p className="text-sm font-medium text-theme-accent mt-1">Company: {company}</p>}
           <p className="text-theme-text-muted">Configure your interview experience</p>
         </div>
 

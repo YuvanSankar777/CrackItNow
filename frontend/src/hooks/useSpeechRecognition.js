@@ -19,18 +19,13 @@ export const useSpeechRecognition = () => {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event) => {
-      let finalTranscriptChunk = '';
-      let interimTranscriptChunk = '';
+      let currentTranscript = '';
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscriptChunk += event.results[i][0].transcript;
-        } else {
-          interimTranscriptChunk += event.results[i][0].transcript;
-        }
+      for (let i = 0; i < event.results.length; ++i) {
+        currentTranscript += event.results[i][0].transcript;
       }
       
-      setTranscript(prev => prev + ' ' + finalTranscriptChunk + interimTranscriptChunk);
+      setTranscript(currentTranscript.trim());
     };
 
     recognition.onerror = (event) => {

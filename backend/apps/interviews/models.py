@@ -37,6 +37,7 @@ class InterviewSession(models.Model):
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default='mid')
     type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='mixed')
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='medium')
+    company = models.CharField(max_length=50, null=True, blank=True)
     max_questions = models.IntegerField(default=5)
     current_question_count = models.IntegerField(default=0)
     is_completed = models.BooleanField(default=False)

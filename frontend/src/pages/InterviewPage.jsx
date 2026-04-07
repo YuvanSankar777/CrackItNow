@@ -1,9 +1,9 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { interviewAPI } from '../api/client';
-import VoiceOrb from '../components/VoiceOrb';
+import HumanAvatar from '../components/HumanAvatar';
+import CameraPreview from '../components/CameraPreview';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 
@@ -87,7 +87,7 @@ const InterviewPage = () => {
   const debounceRef = useRef(null);
   const wsRef = useRef(null);
 
-  const { isListening, transcript, startListening, stopListening, resetTranscript } = useSpeechRecognition();
+  const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
   const { speak, stop } = useSpeechSynthesis();
 
   const sampleContent = useMemo(() => getSampleContent(session), [session]);
@@ -129,7 +129,7 @@ const InterviewPage = () => {
           const res = await interviewAPI.results(session.session_id);
           setQuestionsList(res.data.questions || []);
         }
-      } catch (err) {
+      } catch {
         // ignore non-fatal
       }
     })();
@@ -232,8 +232,10 @@ const InterviewPage = () => {
           </div>
         )}
 
-        <div className="flex justify-center my-6">
-          <VoiceOrb isSpeaking={status === 'speaking'} isListening={isListening} />
+        {/* Side-by-Side Video Layout (Interviewer & Candidate) */}
+        <div className="grid grid-cols-2 gap-4 my-6 mb-8">
+          <HumanAvatar isSpeaking={status === 'speaking'} isListening={isListening} />
+          <CameraPreview compact={true} />
         </div>
 
         <div className="flex-1 overflow-y-auto bg-theme-surface rounded-lg p-4 mb-4">

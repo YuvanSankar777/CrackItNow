@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import LandingPage from './pages/LandingPage';
@@ -9,6 +9,7 @@ import InterviewPageNew from './pages/InterviewPageNew';
 import ResultsPage from './pages/ResultsPage';
 import DashboardPage from './pages/DashboardPage';
 import ThemeSettingsPage from './pages/ThemeSettingsPage';
+import CompaniesPage from './pages/CompaniesPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -24,12 +25,7 @@ function ProfileMenu() {
   const initials = useMemo(() => {
     if (!user) return 'U';
     const source = user.name || user.email || 'User';
-    return source
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('');
+    return source.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('');
   }, [user]);
 
   if (!user) return null;
@@ -42,30 +38,17 @@ function ProfileMenu() {
 
   return (
     <div className="profile-menu">
-      <button
-        type="button"
-        className="profile-menu__trigger"
-        onClick={() => setIsOpen((currentValue) => !currentValue)}
-        aria-label="Open profile menu"
-        aria-expanded={isOpen}
-      >
+      <button type="button" className="profile-menu__trigger" onClick={() => setIsOpen((v) => !v)} aria-label="Open profile menu" aria-expanded={isOpen}>
         <span className="profile-menu__avatar">{initials}</span>
       </button>
-
       {isOpen && (
         <div className="profile-menu__dropdown">
           <div className="profile-menu__info">
             <span className="profile-menu__name">{user.name || 'User'}</span>
             <span className="profile-menu__email">{user.email}</span>
           </div>
-
-          <Link className="profile-menu__item" to="/theme-settings" onClick={() => setIsOpen(false)}>
-            Theme Settings
-          </Link>
-
-          <button type="button" className="profile-menu__item profile-menu__item--danger" onClick={handleLogout}>
-            Logout
-          </button>
+          <Link className="profile-menu__item" to="/theme-settings" onClick={() => setIsOpen(false)}>Theme Settings</Link>
+          <button type="button" className="profile-menu__item profile-menu__item--danger" onClick={handleLogout}>Logout</button>
         </div>
       )}
     </div>
@@ -74,48 +57,30 @@ function ProfileMenu() {
 
 function AppRoutes() {
   const { user } = useAuth();
-
   return (
     <Routes>
       <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="/auth" element={<AuthPage />} />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <DashboardPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/setup" element={
-        <ProtectedRoute>
-          <SetupPageNew />
-        </ProtectedRoute>
-      } />
-      <Route path="/interview" element={
-        <ProtectedRoute>
-          <InterviewPageNew />
-        </ProtectedRoute>
-      } />
-      <Route path="/results/:id" element={
-        <ProtectedRoute>
-          <ResultsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/theme-settings" element={
-        <ProtectedRoute>
-          <ThemeSettingsPage />
-        </ProtectedRoute>
-      } />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/companies" element={<ProtectedRoute><CompaniesPage /></ProtectedRoute>} />
+      <Route path="/setup" element={<ProtectedRoute><SetupPageNew /></ProtectedRoute>} />
+      <Route path="/interview" element={<ProtectedRoute><InterviewPageNew /></ProtectedRoute>} />
+      <Route path="/results/:id" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+      <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettingsPage /></ProtectedRoute>} />
     </Routes>
   );
 }
 
 function AppShell() {
-  // Theme is now managed by ThemeProvider context
-  // AppShell just renders the routes and ProfileMenu
+  const location = useLocation();
+  const hideControls = location.pathname === '/interview';
   return (
     <div className="app-shell">
-      <div className="app-shell__controls">
-        <ProfileMenu />
-      </div>
+      {!hideControls && (
+        <div className="app-shell__controls">
+          <ProfileMenu />
+        </div>
+      )}
       <AppRoutes />
     </div>
   );

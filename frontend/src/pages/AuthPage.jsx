@@ -60,7 +60,7 @@ const AuthPage = () => {
               className="wave-bar" 
               style={{ 
                 animationDelay: `${i * 0.15}s`,
-                height: `${20 + Math.random() * 60}%`
+                height: `${20 + (i * 13 % 60)}%`
               }} 
             />
           ))}

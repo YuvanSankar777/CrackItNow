@@ -44,7 +44,7 @@ class InterviewSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewSession
         fields = [
-            'id', 'role', 'level', 'type', 'difficulty',
+            'id', 'role', 'level', 'type', 'difficulty', 'company',
             'max_questions', 'current_question_count', 'is_completed',
             'start_time', 'end_time', 'questions', 'result', 'conversation'
         ]
@@ -55,6 +55,7 @@ class StartInterviewSerializer(serializers.Serializer):
     level = serializers.ChoiceField(choices=InterviewSession.LEVEL_CHOICES, default='mid')
     type = serializers.ChoiceField(choices=InterviewSession.TYPE_CHOICES, default='mixed')
     difficulty = serializers.ChoiceField(choices=InterviewSession.DIFFICULTY_CHOICES, default='medium')
+    company = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
     max_questions = serializers.IntegerField(min_value=3, max_value=15, default=5)
     ai_voice = serializers.CharField(required=False, default='female')
     ai_gender = serializers.CharField(required=False, default='female')

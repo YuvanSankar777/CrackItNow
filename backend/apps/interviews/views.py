@@ -2,6 +2,8 @@
 Interview API Views — the core logic layer.
 """
 from django.utils import timezone
+from datetime import date, timedelta
+from collections import defaultdict
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -48,6 +50,7 @@ class StartInterviewView(APIView):
             level=data['level'],
             type=data['type'],
             difficulty=data['difficulty'],
+            company=data.get('company'),
             max_questions=data['max_questions'],
         )
 
@@ -58,6 +61,7 @@ class StartInterviewView(APIView):
                 level=data['level'],
                 interview_type=data['type'],
                 difficulty=data['difficulty'],
+                company=data.get('company'),
             )
 
             question_text = ai_data.get('question', 'Tell me about yourself and your background.')
@@ -90,6 +94,9 @@ class StartInterviewView(APIView):
                 'question_number': 1,
                 'total_questions': session.max_questions,
                 'difficulty': session.difficulty,
+                'company': session.company or '',
+                'role': session.role,
+                'level': session.level,
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
@@ -105,7 +112,7 @@ class ProcessResponseView(APIView):
     POST /api/interviews/respond/
     Accepts candidate answer, evaluates it, returns next question.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = ProcessResponseSerializer(data=request.data)
@@ -115,7 +122,11 @@ class ProcessResponseView(APIView):
         data = serializer.validated_data
 
         try:
-            session = InterviewSession.objects.get(id=data['session_id'], user=request.user)
+            # Support both authenticated and guest sessions
+            if request.user and request.user.is_authenticated:
+                session = InterviewSession.objects.get(id=data['session_id'], user=request.user)
+            else:
+                session = InterviewSession.objects.get(id=data['session_id'])
         except InterviewSession.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -156,6 +167,7 @@ class ProcessResponseView(APIView):
                 level=session.level,
                 interview_type=session.type,
                 difficulty=session.difficulty,
+                company=session.company,
                 conversation_history=conv_history,
                 current_question=question.question_text,
                 candidate_answer=data['answer_text'],
@@ -235,7 +247,7 @@ class EndInterviewView(APIView):
     POST /api/interviews/end/
     Generate the final performance report.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         session_id = request.data.get('session_id')
@@ -243,7 +255,7 @@ class EndInterviewView(APIView):
             return Response({'error': 'session_id required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            session = InterviewSession.objects.get(id=session_id, user=request.user)
+            session = InterviewSession.objects.get(id=session_id)
         except InterviewSession.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -342,6 +354,8 @@ class SessionListView(APIView):
                 'role': s.role,
                 'level': s.level,
                 'type': s.type,
+                'difficulty': s.difficulty,
+                'company': s.company,
                 'is_completed': s.is_completed,
                 'start_time': s.start_time,
                 'result': result,
@@ -428,46 +442,199 @@ class ExecuteCodeView(APIView):
     """
     POST /api/interviews/execute-code/
     Execute candidate code through Judge0 and analyze complexity.
+    No authentication required — code execution is standalone.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = ExecuteCodeSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         data = serializer.validated_data
-        
+
         # Execute code via Judge0
-        result = execute_code(
-            source_code=data['source_code'],
-            language_id=data.get('language_id', 63),
-            stdin=data.get('stdin', ''),
-        )
-        
-        # Analyze complexity using Gemini
+        try:
+            result = execute_code(
+                source_code=data['source_code'],
+                language_id=data.get('language_id', 63),
+                stdin=data.get('stdin', ''),
+            )
+        except Exception as e:
+            return Response({
+                'passed': False,
+                'output': '',
+                'status': 'Execution Error',
+                'feedback': str(e),
+            }, status=status.HTTP_200_OK)
+
+        # Determine success/failure from Judge0 response
+        status_id = result.get('status_id') or (result.get('status') or {}).get('id', 0)
+        stderr = (result.get('stderr') or '').strip()
+        compile_output = (result.get('compile_output') or '').strip()
+        stdout = (result.get('stdout') or '').strip()
+
+        # Status 3 = Accepted in Judge0
+        passed = status_id == 3
+
+        # Determine human-readable status
+        status_desc = (result.get('status') or {}).get('description', '')
+        if compile_output and not passed:
+            display_status = 'Compilation Error'
+        elif stderr and not passed:
+            display_status = 'Runtime Error'
+        elif passed:
+            display_status = 'Accepted ✓'
+        else:
+            display_status = status_desc or 'Wrong Answer'
+
+        # Combine output for display
+        display_output = stdout
+        if compile_output:
+            display_output = compile_output
+        elif stderr and not passed:
+            display_output = stderr
+
+        # Analyze complexity using Gemini (optional, non-blocking)
         language = data.get('language', 'javascript')
-        complexity_analysis = gemini_service.analyze_code_complexity(
-            code_text=data['source_code'],
-            language=language,
-        )
-        
-        # Structure response with test results and complexity
+        complexity_analysis = {}
+        try:
+            complexity_analysis = gemini_service.analyze_code_complexity(
+                code_text=data['source_code'],
+                language=language,
+            )
+        except Exception:
+            pass
+
         response_data = {
-            'passed': result.get('status_id', 0) == 3,  # Status 3 = Accepted
-            'output': result.get('stdout', ''),
-            'status': result.get('status', {}).get('description', 'Unknown'),
-            'time_complexity': complexity_analysis.get('time_complexity', 'O(n)'),
-            'space_complexity': complexity_analysis.get('space_complexity', 'O(1)'),
+            'passed': passed,
+            'output': display_output,
+            'status': display_status,
+            'time_complexity': complexity_analysis.get('time_complexity', ''),
+            'space_complexity': complexity_analysis.get('space_complexity', ''),
             'suggestions': complexity_analysis.get('suggestions', []),
-            'feedback': f"Logic score: {complexity_analysis.get('logic_score', 5)}/10",
-            'test_results': [
-                {
-                    'input': 'Sample test',
-                    'expected': 'Sample output',
-                    'actual': result.get('stdout', ''),
-                    'passed': result.get('status_id', 0) == 3,
-                }
-            ]
+            'feedback': complexity_analysis.get('feedback', ''),
         }
-        
+
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class DashboardStatsView(APIView):
+    """
+    GET /api/interviews/dashboard/stats/
+    Returns aggregated stats for the current user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = InterviewSession.objects.filter(user=request.user)
+        completed = sessions.filter(is_completed=True)
+        in_progress = sessions.filter(is_completed=False)
+
+        # Average score
+        scores = []
+        for s in completed:
+            if hasattr(s, 'result') and s.result:
+                scores.append(s.result.overall_score)
+        avg_score = round(sum(scores) / len(scores), 1) if scores else None
+
+        # Company stats
+        company_map = defaultdict(lambda: {'attempts': 0, 'scores': []})
+        for s in sessions:
+            key = s.company or 'General'
+            company_map[key]['attempts'] += 1
+            if hasattr(s, 'result') and s.result:
+                company_map[key]['scores'].append(s.result.overall_score)
+
+        company_stats = {}
+        for company, data in company_map.items():
+            company_stats[company] = {
+                'attempts': data['attempts'],
+                'avg_score': round(sum(data['scores']) / len(data['scores']), 1) if data['scores'] else None,
+            }
+
+        # Recent sessions
+        recent = []
+        for s in sessions.order_by('-start_time')[:8]:
+            result = None
+            if hasattr(s, 'result') and s.result:
+                result = {'overall_score': s.result.overall_score}
+            recent.append({
+                'id': s.id,
+                'role': s.role,
+                'company': s.company,
+                'level': s.level,
+                'difficulty': s.difficulty,
+                'is_completed': s.is_completed,
+                'start_time': s.start_time,
+                'result': result,
+            })
+
+        return Response({
+            'total_sessions': sessions.count(),
+            'completed': completed.count(),
+            'in_progress': in_progress.count(),
+            'average_score': avg_score,
+            'company_stats': company_stats,
+            'recent_sessions': recent,
+        })
+
+
+class DashboardStreakView(APIView):
+    """
+    GET /api/interviews/dashboard/streak/
+    Returns streak data + 365-day activity map.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sessions = InterviewSession.objects.filter(user=request.user).order_by('start_time')
+
+        # Build activity map for past 365 days
+        today = date.today()
+        activity = defaultdict(int)
+        for s in sessions:
+            day = s.start_time.date()
+            if (today - day).days <= 365:
+                activity[day.isoformat()] += 1
+
+        # Compute streaks
+        current_streak = 0
+        longest_streak = 0
+        streak = 0
+        check_day = today
+
+        # Collect unique active days
+        active_days = sorted(set(s.start_time.date() for s in sessions), reverse=True)
+
+        for i, day in enumerate(active_days):
+            if i == 0:
+                if (today - day).days <= 1:
+                    streak = 1
+                else:
+                    break
+            else:
+                prev = active_days[i - 1]
+                if (prev - day).days == 1:
+                    streak += 1
+                else:
+                    break
+        current_streak = streak
+
+        # Longest streak (ascending pass)
+        asc_days = sorted(set(s.start_time.date() for s in sessions))
+        run = 0
+        for i, d in enumerate(asc_days):
+            if i == 0:
+                run = 1
+            else:
+                if (d - asc_days[i - 1]).days == 1:
+                    run += 1
+                else:
+                    run = 1
+            longest_streak = max(longest_streak, run)
+
+        return Response({
+            'current_streak': current_streak,
+            'longest_streak': longest_streak,
+            'activity': dict(activity),
+        })
