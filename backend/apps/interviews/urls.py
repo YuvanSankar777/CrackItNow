@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     StartInterviewView, ProcessResponseView,
     EndInterviewView, ResultsView, SessionListView, TTSView, CodeUpdateView, ExecuteCodeView,
+    SubmitCodeView,
     DashboardStatsView, DashboardStreakView
 )
 
@@ -14,6 +15,7 @@ urlpatterns = [
     path('tts/', TTSView.as_view(), name='tts'),
     path('code-update/', CodeUpdateView.as_view(), name='code-update'),
     path('execute-code/', ExecuteCodeView.as_view(), name='execute-code'),
+    path('submit-code/', SubmitCodeView.as_view(), name='submit-code'),
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/streak/', DashboardStreakView.as_view(), name='dashboard-streak'),
 ]

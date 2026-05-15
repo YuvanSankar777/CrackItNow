@@ -71,6 +71,10 @@ class Question(models.Model):
     question_text = models.TextField()
     order = models.IntegerField(default=0)
     is_coding = models.BooleanField(default=False)
+    # [{"stdin": "...", "expected_stdout": "...", "explanation": "..."}]
+    test_cases = models.JSONField(default=list, blank=True)
+    # {"python": "...", "javascript": "...", "java": "...", "cpp": "..."}
+    starter_code = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

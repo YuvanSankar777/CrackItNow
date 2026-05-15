@@ -62,6 +62,7 @@ export const interviewAPI = {
     stdin:       data.stdin || '',
     is_submission: data.is_submission || false,
   }),
+  submitCode:    (data) => api.post('/interviews/submit-code/', data),
   end:           (data) => api.post('/interviews/end/', data),
   results:       (sessionId) => api.get(`/interviews/results/${sessionId}/`),
   sessions:      () => api.get('/interviews/sessions/'),

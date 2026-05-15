@@ -45,7 +45,7 @@ const AuthPage = () => {
         <div className="relative z-10 text-center max-w-lg mb-16 animate-fade">
           <h1 className="text-4xl lg:text-5xl font-serif !text-white font-bold leading-tight mb-4">
             Welcome to <br />
-            <span className="text-theme-accent">DevVox AI Platform</span>
+            <span className="text-theme-accent">CrackItNow</span>
           </h1>
           <p className="text-hero-muted text-lg lg:text-xl font-normal leading-relaxed opacity-80">
             Connect, collaborate, and master your career with our AI-driven resources.

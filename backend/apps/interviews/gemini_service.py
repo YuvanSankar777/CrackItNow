@@ -2,11 +2,39 @@
 Gemini AI Service — handles all AI interactions for the interview engine.
 """
 import json
+import os
 import re
+from pathlib import Path
 import google.generativeai as genai
 from django.conf import settings
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
+_CURRENT_KEY = None
+
+
+def _load_env_file_key():
+    """Read GEMINI_API_KEY directly from backend/.env so key rotations don't require a Django restart."""
+    env_path = Path(settings.BASE_DIR) / '.env'
+    if not env_path.exists():
+        return None
+    try:
+        for line in env_path.read_text().splitlines():
+            if line.strip().startswith('GEMINI_API_KEY='):
+                return line.split('=', 1)[1].strip()
+    except Exception:
+        pass
+    return None
+
+
+def _ensure_configured():
+    """Reconfigure the SDK if the .env key has been changed since last call."""
+    global _CURRENT_KEY
+    key = _load_env_file_key() or os.getenv('GEMINI_API_KEY') or settings.GEMINI_API_KEY
+    if key and key != _CURRENT_KEY:
+        genai.configure(api_key=key)
+        _CURRENT_KEY = key
+
+
+_ensure_configured()
 
 
 def _get_company_prompt_additive(company: str) -> str:
@@ -36,56 +64,100 @@ def _get_company_prompt_additive(company: str) -> str:
     return ""
 
 
+_FALLBACK_PROBLEMS = {
+    'two_sum': {
+        'question': "Hello — let's start with a classic problem. Read two lines from stdin: the first is a comma-separated list of integers, the second is a target integer. Print the indices (space-separated) of the two numbers that add up to the target.",
+        'test_cases': [
+            {'stdin': '2,7,11,15\n9', 'expected_stdout': '0 1', 'explanation': '2 + 7 = 9'},
+            {'stdin': '3,2,4\n6', 'expected_stdout': '1 2', 'explanation': '2 + 4 = 6'},
+            {'stdin': '3,3\n6', 'expected_stdout': '0 1', 'explanation': '3 + 3 = 6'},
+        ],
+        'starter_code': {
+            'python': "nums = list(map(int, input().split(',')))\ntarget = int(input())\n# Print the two indices separated by a space\n",
+            'javascript': "const readline = require('readline');\nconst rl = readline.createInterface({ input: process.stdin });\nconst lines = [];\nrl.on('line', l => lines.push(l));\nrl.on('close', () => {\n  const nums = lines[0].split(',').map(Number);\n  const target = Number(lines[1]);\n  // console.log two indices separated by a space\n});\n",
+            'java': "import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String[] parts = sc.nextLine().split(\",\");\n        int target = Integer.parseInt(sc.nextLine());\n        // Print the two indices separated by a space\n    }\n}",
+            'cpp': "#include <bits/stdc++.h>\nusing namespace std;\nint main(){\n    string line; getline(cin, line);\n    int target; cin >> target;\n    // Print the two indices separated by a space\n    return 0;\n}",
+        },
+    },
+    'palindrome': {
+        'question': "Warm-up problem. Read a single line from stdin. Print 'true' if it reads the same forwards and backwards after ignoring non-alphanumeric characters and casing, else 'false'.",
+        'test_cases': [
+            {'stdin': 'A man, a plan, a canal: Panama', 'expected_stdout': 'true', 'explanation': 'cleaned => amanaplanacanalpanama'},
+            {'stdin': 'race a car', 'expected_stdout': 'false', 'explanation': 'raceacar is not a palindrome'},
+            {'stdin': ' ', 'expected_stdout': 'true', 'explanation': 'empty after cleaning'},
+        ],
+        'starter_code': {
+            'python': "import sys\ns = sys.stdin.read()\n# Print 'true' or 'false'\n",
+            'javascript': "let data = '';\nprocess.stdin.on('data', d => data += d);\nprocess.stdin.on('end', () => {\n  // console.log('true') or console.log('false')\n});\n",
+            'java': "import java.util.*;\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.hasNextLine() ? sc.nextLine() : \"\";\n        // Print true or false\n    }\n}",
+            'cpp': "#include <bits/stdc++.h>\nusing namespace std;\nint main(){\n    string s;\n    getline(cin, s);\n    // Print true or false\n    return 0;\n}",
+        },
+    },
+}
+
+
 def _fallback_first_question(role: str, level: str, difficulty: str, interview_type: str) -> dict:
-    title_map = {
-        'frontend': 'Two Sum',
-        'backend': 'Valid Parentheses',
-        'fullstack': 'Merge Intervals',
-        'general': 'Palindrome Check'
-    }
-    prompt_map = {
-        'frontend': 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-        'backend': 'Given a string containing only the characters ()[]{} determine if the input string is valid.',
-        'fullstack': 'Given an array of intervals where intervals[i] = [start, end], merge all overlapping intervals.',
-        'general': 'Return true if the given string is a palindrome after ignoring non-alphanumeric characters and casing.'
-    }
-    role_key = role if role in prompt_map else 'fullstack'
+    role_key = 'two_sum' if role in ('frontend', 'backend', 'fullstack', 'ml_engineer', 'data_science') else 'palindrome'
+    problem = _FALLBACK_PROBLEMS[role_key]
     return {
-        'question': f"Hello — let's start with a problem: {prompt_map[role_key]}",
-        'is_coding': True
+        'question': problem['question'],
+        'is_coding': True,
+        'test_cases': problem['test_cases'],
+        'starter_code': problem['starter_code'],
     }
 
 
 def _fallback_evaluate_and_next(role, level, interview_type, difficulty, conversation_history, current_question, candidate_answer, question_number, total_questions):
-    # Simple heuristic fallback: score by length of answer
-    score = min(10, max(0, int(len(candidate_answer) / 20))) if candidate_answer else 3
+    # The AI is unreachable (quota, network, etc). Don't pretend to evaluate —
+    # return a neutral score and flag it so the UI can show the candidate why.
+    score = 5
     is_last = question_number >= total_questions
-    
-    snippet = candidate_answer[:40] + "..." if candidate_answer and len(candidate_answer) > 40 else candidate_answer
-    prefix = f"I see you mentioned '{snippet}'. " if snippet else "Understood. "
-    
-    follow_ups = [
-        "What are the primary differences between this approach and alternative architectures?",
-        f"How would you scale this solution considering you are aiming for a {level} {role} position?",
-        "Can you describe a potential edge case that might break this logic?",
-        "Could you explain the memory constraints and performance tradeoffs here?",
-        "How would you structure unit tests for this implementation?"
-    ]
-    
-    idx = (question_number - 1) % len(follow_ups)
-    next_q = None if is_last else prefix + follow_ups[idx]
+
+    # Rotate through fallback coding problems so the next question is still executable.
+    wants_coding = interview_type in ('technical', 'coding', 'mixed') and not is_last
+    next_q = None
+    next_is_coding = False
+    next_tests = []
+    next_starter = {}
+
+    if not is_last:
+        if wants_coding:
+            problem_keys = list(_FALLBACK_PROBLEMS.keys())
+            # question_number = count of questions ALREADY answered.
+            # Use that to index the NEXT problem, so it differs from the last one.
+            pick = problem_keys[question_number % len(problem_keys)]
+            problem = _FALLBACK_PROBLEMS[pick]
+            next_q = problem['question']
+            next_is_coding = True
+            next_tests = problem['test_cases']
+            next_starter = problem['starter_code']
+        else:
+            snippet = candidate_answer[:40] + "..." if candidate_answer and len(candidate_answer) > 40 else candidate_answer
+            prefix = f"I see you mentioned '{snippet}'. " if snippet else "Understood. "
+            follow_ups = [
+                "What are the primary differences between this approach and alternative architectures?",
+                f"How would you scale this solution considering you are aiming for a {level} {role} position?",
+                "Can you describe a potential edge case that might break this logic?",
+                "Could you explain the memory constraints and performance tradeoffs here?",
+                "How would you structure unit tests for this implementation?",
+            ]
+            idx = (question_number - 1) % len(follow_ups)
+            next_q = prefix + follow_ups[idx]
 
     return {
         'evaluation': {
             'score': score,
-            'feedback': 'Good attempt. Be more specific about trade-offs and complexity.',
-            'strengths': 'Clear thinking',
-            'weaknesses': 'Needs more edge-case handling',
+            'feedback': 'The AI evaluator is temporarily unavailable (likely hit its rate limit). This score is a placeholder — please retry later for a real evaluation.',
+            'strengths': '',
+            'weaknesses': '',
         },
         'next_question': next_q,
-        'is_coding': False,
+        'is_coding': next_is_coding,
+        'test_cases': next_tests,
+        'starter_code': next_starter,
         'is_finished': is_last,
         'adjusted_difficulty': difficulty,
+        'fallback_used': True,
     }
 
 
@@ -110,10 +182,57 @@ def _clean_json(text: str) -> str:
     return text.strip()
 
 
+def _coding_prompt_contract() -> str:
+    """Extra instructions appended when we want a coding question with test cases + starter code."""
+    return """
+This is a CODING question. The candidate will write a program that reads from stdin and writes to stdout.
+You MUST include concrete test cases with exact stdin and expected stdout, plus starter code for four languages.
+
+Rules for test cases:
+- stdin must contain ONLY the raw input the program reads (no prose, no prefix like "Input:").
+- expected_stdout must be the EXACT string the correct program should print (no trailing punctuation, no prose).
+- Include 2-4 test cases, each small and unambiguous.
+- Pick a deterministic output format and use it consistently.
+
+Rules for starter_code:
+- Provide minimal scaffolding for python, javascript (Node.js), java (class Solution with main), and cpp.
+- Include the stdin-reading boilerplate so the candidate only has to fill in the logic.
+- Do NOT solve the problem.
+"""
+
+
+def _coding_json_shape() -> str:
+    return """{
+  "question": "<the full problem statement, including input/output format and constraints>",
+  "is_coding": true,
+  "test_cases": [
+    {"stdin": "<raw stdin>", "expected_stdout": "<exact expected stdout>", "explanation": "<short>"}
+  ],
+  "starter_code": {
+    "python": "<code>",
+    "javascript": "<code>",
+    "java": "<code>",
+    "cpp": "<code>"
+  }
+}"""
+
+
 def generate_first_question(role: str, level: str, interview_type: str, difficulty: str, company: str = None) -> dict:
     """Generate the opening question for a new interview session."""
+    # Decide whether to make the first question coding or behavioral based on interview_type.
+    wants_coding = interview_type in ('technical', 'coding', 'mixed')
+
     try:
+        _ensure_configured()
         model = genai.GenerativeModel('gemini-2.5-flash')
+
+        if wants_coding:
+            json_shape = _coding_json_shape()
+            contract = _coding_prompt_contract()
+        else:
+            json_shape = '{\n  "question": "<the full question text including any greeting>",\n  "is_coding": false\n}'
+            contract = ""
+
         prompt = f"""You are an expert technical interviewer conducting a {interview_type} interview.
 
 Candidate Profile:
@@ -125,20 +244,20 @@ Candidate Profile:
 Your task: Generate the very first interview question to open the conversation naturally.
 Be warm, professional, and sound like a real human interviewer.
 {_get_company_prompt_additive(company)}
-
-{"Include a brief friendly greeting before the question." if True else ""}
+{contract}
 
 Respond ONLY with valid JSON (no markdown, no explanation):
-{{
-  "question": "<the full question text including any greeting>",
-  "is_coding": false
-}}
+{json_shape}
 
 Make the question appropriate for a {level} {role} candidate at {difficulty} difficulty.
 """
 
         response = model.generate_content(prompt)
         data = json.loads(_clean_json(response.text))
+        # Normalize: ensure required coding fields exist when is_coding
+        if data.get('is_coding'):
+            data.setdefault('test_cases', [])
+            data.setdefault('starter_code', {})
         return data
     except Exception as e:
         # Log and return fallback content when Gemini or model is unavailable
@@ -163,6 +282,7 @@ def evaluate_and_next_question(
     Returns a structured dict with evaluation + next_question.
     """
     try:
+        _ensure_configured()
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         history_text = "\n".join([
@@ -170,6 +290,13 @@ def evaluate_and_next_question(
         ])
 
         is_last = question_number >= total_questions
+        next_question_number = question_number + 1
+
+        # Collect everything the AI has already asked so we can forbid repeats.
+        previously_asked = [
+            msg['text'] for msg in conversation_history if msg.get('speaker') == 'AI'
+        ]
+        asked_block = "\n".join(f"- {q}" for q in previously_asked) or "(none yet)"
 
         prompt = f"""You are an expert technical interviewer conducting a {interview_type} interview.
 
@@ -178,10 +305,14 @@ Candidate Profile:
 - Level: {level}
 - Current Difficulty: {difficulty}
 {f"- Target Company: {company}" if company else ""}
-- Question {question_number} of {total_questions}
+- Candidate has just finished answering question {question_number} of {total_questions}.
+- The NEXT question you generate will be question {next_question_number} of {total_questions}.
 
 Recent Conversation:
 {history_text}
+
+Questions already asked — DO NOT repeat or paraphrase any of these:
+{asked_block}
 
 Current Question Asked:
 "{current_question}"
@@ -191,7 +322,7 @@ Candidate's Answer:
 
 Your tasks:
 1. Evaluate the candidate's answer honestly and constructively
-2. {"Generate the next interview question" if not is_last else "This is the LAST question, so set next_question to null"}
+2. {"Generate a BRAND NEW interview question that has not been asked above. Do not greet the candidate again — skip openers like 'Hello' or 'Let's start' — just ask the next question directly." if not is_last else "This is the LAST question, so set next_question to null"}
 {_get_company_prompt_additive(company)}
 
 Adaptive difficulty rules:
@@ -200,6 +331,9 @@ Adaptive difficulty rules:
 - If 5 <= score <= 7: maintain current difficulty
 
 {"The interview is ending after this evaluation. Set next_question to null and is_finished to true." if is_last else ""}
+
+If the next question IS coding, also include test_cases and starter_code with this shape:
+{_coding_prompt_contract() if not is_last else ''}
 
 Respond ONLY with valid JSON (no markdown fences, no extra text):
 {{
@@ -210,7 +344,9 @@ Respond ONLY with valid JSON (no markdown fences, no extra text):
     "weaknesses": "<areas to improve>"
   }},
   "next_question": {"null" if is_last else '"<the next interview question text>"'},
-  "is_coding": {"false" if interview_type != "coding" else "<true or false>"},
+  "is_coding": {"false" if is_last or interview_type not in ("technical", "coding", "mixed") else "<true or false>"},
+  "test_cases": {"[]" if is_last else '<array as in the coding contract, or [] if is_coding is false>'},
+  "starter_code": {"{{}}" if is_last else '<object as in the coding contract, or {{}} if is_coding is false>'},
   "is_finished": {"true" if is_last else "false"},
   "adjusted_difficulty": "<easy|medium|hard>"
 }}
@@ -218,6 +354,23 @@ Respond ONLY with valid JSON (no markdown fences, no extra text):
 
         response = model.generate_content(prompt)
         data = json.loads(_clean_json(response.text))
+        # Normalize coding fields
+        if data.get('is_coding'):
+            data.setdefault('test_cases', [])
+            data.setdefault('starter_code', {})
+
+        # Reject if Gemini ignored the forbid-repeat instruction and returned
+        # a near-duplicate of something it already asked. Fall back instead.
+        nq = (data.get('next_question') or '').strip().lower()
+        if nq and not is_last:
+            for prev in previously_asked:
+                prev_norm = prev.strip().lower()
+                if not prev_norm:
+                    continue
+                # exact match, or strong overlap of the first 60 chars
+                if nq == prev_norm or (len(prev_norm) > 60 and prev_norm[:60] in nq):
+                    print('Gemini returned a repeat — forcing fallback')
+                    raise ValueError('duplicate_next_question')
         return data
     except Exception as e:
         print('Gemini evaluate_and_next_question failed:', str(e))
@@ -233,6 +386,7 @@ def generate_final_report(
 ) -> dict:
     """Generate the comprehensive final interview report."""
     try:
+        _ensure_configured()
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         eval_text = "\n".join([
@@ -290,6 +444,7 @@ def analyze_code_update(
 ) -> dict:
     """Analyze latest code snapshot and return probing feedback/question."""
     try:
+        _ensure_configured()
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         history_text = "\n".join([
@@ -334,9 +489,73 @@ Respond ONLY with valid JSON:
         }
 
 
+def generate_code_followup(
+    question_text: str,
+    code: str,
+    language: str,
+    passed_count: int,
+    total_cases: int,
+) -> dict:
+    """
+    After a candidate submits code that passed the test cases, produce a single probing
+    follow-up question (e.g. "why did you pick this approach?", "time complexity?",
+    "can you optimize this further?") and a brief coding-correctness score.
+    """
+    pass_ratio = (passed_count / total_cases) if total_cases else 1.0
+    try:
+        _ensure_configured()
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        prompt = f"""You are a senior technical interviewer. The candidate just submitted code for this problem:
+
+PROBLEM:
+{question_text}
+
+CANDIDATE'S CODE ({language}):
+```{language}
+{code[-6000:]}
+```
+
+TEST RESULTS: {passed_count} / {total_cases} test cases passed.
+
+Your tasks:
+1. Score the CODE ITSELF on correctness and quality from 0-10 (factor in pass ratio AND code quality).
+2. Ask ONE probing follow-up question an interviewer would naturally ask now. Pick ONE of:
+   - "Why did you choose this approach over {{alternative}}?"
+   - "What's the time and space complexity, and can you optimize it?"
+   - "How would you handle {{specific edge case visible in the code}}?"
+   Keep it specific to the candidate's actual code, not generic.
+3. Briefly note the optimization they should consider (you'll share this if they get stuck).
+
+Respond ONLY with valid JSON (no markdown):
+{{
+  "coding_score": <0-10>,
+  "strengths": "<short>",
+  "weaknesses": "<short>",
+  "followup_question": "<the single question to ask the candidate>",
+  "optimization_hint": "<one-sentence hint to share if the candidate is stuck>"
+}}
+"""
+        response = model.generate_content(prompt)
+        data = json.loads(_clean_json(response.text))
+        return data
+    except Exception as e:
+        print('Gemini generate_code_followup failed:', str(e))
+        # Deterministic fallback
+        base = 8 if pass_ratio >= 0.99 else max(3, int(pass_ratio * 10))
+        return {
+            'coding_score': base,
+            'strengths': 'Reached a working solution',
+            'weaknesses': 'Could discuss trade-offs more explicitly',
+            'followup_question': "Walk me through your approach — what's the time and space complexity, and can you think of a way to optimize it further?",
+            'optimization_hint': 'Consider whether a hash map or two-pointer technique would reduce the complexity.',
+        }
+
+
 def analyze_code_complexity(code_text: str, language: str = 'javascript') -> dict:
     """Analyze code for time and space complexity."""
     try:
+        _ensure_configured()
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         prompt = f"""Analyze the following {language} code for complexity:

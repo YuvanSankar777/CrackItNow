@@ -17,8 +17,8 @@ const LandingPage = () => {
       <header className="bg-white border-b border-theme-border/50 sticky top-0 z-50">
         <nav className="container mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/logo.png" alt="DevVox AI Logo" className="w-10 h-10 object-contain shadow-lg shadow-theme-accent/10" />
-            <span className="text-xl font-bold tracking-tight text-theme-text uppercase">DevVox AI</span>
+            <img src="/logo.png" alt="CrackItNow Logo" className="w-10 h-10 object-contain shadow-lg shadow-theme-accent/10" />
+            <span className="text-xl font-bold tracking-tight text-theme-text uppercase">CrackItNow</span>
           </div>
 
           <div className="hidden md:flex items-center gap-10">
@@ -113,7 +113,7 @@ const LandingPage = () => {
         <section className="bg-theme-bg py-20 border-t border-theme-border">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-serif text-theme-text mb-4 font-bold">Why Choose DevVox AI?</h2>
+              <h2 className="text-4xl lg:text-5xl font-serif text-theme-text mb-4 font-bold">Why Choose CrackItNow?</h2>
               <p className="text-theme-text-muted max-w-2xl mx-auto text-lg">
                 Experience the future of technical interview preparation with AI-powered coaching.
               </p>
@@ -209,7 +209,7 @@ const LandingPage = () => {
       {/* ── Footer ── */}
       <footer className="bg-white py-8 border-t border-theme-border/50">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-theme-text-muted">© 2024 DevVox AI. All rights reserved.</p>
+          <p className="text-xs text-theme-text-muted">© 2026 CrackItNow. All rights reserved.</p>
           <div className="flex gap-6 text-xs text-theme-text-muted">
             <a href="#" className="hover:text-theme-accent">Privacy Policy</a>
             <a href="#" className="hover:text-theme-accent">Terms of Service</a>

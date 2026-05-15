@@ -1,14 +1,11 @@
 import React, { useMemo } from 'react';
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
 function getColorClass(count) {
-  if (!count) return 'bg-[#161616] border-[#222]';
-  if (count === 1) return 'bg-green-900/60 border-green-800/40';
-  if (count <= 3)  return 'bg-green-700/70 border-green-600/50';
-  if (count <= 5)  return 'bg-green-500/80 border-green-400/60';
-  return 'bg-green-400 border-green-300/70';
+  if (!count)      return 'bg-theme-bg border-theme-border';
+  if (count === 1) return 'bg-emerald-200 border-emerald-300';
+  if (count <= 3)  return 'bg-emerald-400 border-emerald-500';
+  if (count <= 5)  return 'bg-emerald-500 border-emerald-600';
+  return 'bg-emerald-600 border-emerald-700';
 }
 
 const ActivityHeatmap = ({ activity = {} }) => {
@@ -24,7 +21,6 @@ const ActivityHeatmap = ({ activity = {} }) => {
     return result;
   }, [activity]);
 
-  // Group into weeks (columns)
   const weeks = useMemo(() => {
     const out = [];
     let week = [];
@@ -47,16 +43,15 @@ const ActivityHeatmap = ({ activity = {} }) => {
               <div
                 key={cell.date}
                 title={`${cell.date}: ${cell.count} session${cell.count !== 1 ? 's' : ''}`}
-                className={`w-[11px] h-[11px] rounded-[2px] border cursor-default shrink-0 ${getColorClass(cell.count)} hover:ring-1 hover:ring-green-400/50 transition-all`}
+                className={`w-[11px] h-[11px] rounded-[2px] border cursor-default shrink-0 ${getColorClass(cell.count)}`}
               />
             ))}
           </div>
         ))}
       </div>
-      {/* Legend */}
-      <div className="flex items-center gap-2 text-[10px] text-gray-600">
+      <div className="flex items-center gap-2 text-[10px] text-theme-text-muted">
         <span>Less</span>
-        {['bg-[#161616] border-[#222]', 'bg-green-900/60 border-green-800/40', 'bg-green-700/70 border-green-600/50', 'bg-green-500/80 border-green-400/60', 'bg-green-400 border-green-300/70'].map((c, i) => (
+        {['bg-theme-bg border-theme-border', 'bg-emerald-200 border-emerald-300', 'bg-emerald-400 border-emerald-500', 'bg-emerald-500 border-emerald-600', 'bg-emerald-600 border-emerald-700'].map((c, i) => (
           <div key={i} className={`w-[11px] h-[11px] rounded-[2px] border ${c}`} />
         ))}
         <span>More</span>

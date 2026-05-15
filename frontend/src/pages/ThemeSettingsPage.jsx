@@ -53,7 +53,7 @@ const ThemeSettingsPage = () => {
             </svg>
             Appearance
           </h2>
-          <p className="text-theme-text-muted mb-6">Choose how DevVox AI should look and feel</p>
+          <p className="text-theme-text-muted mb-6">Choose how CrackItNow should look and feel</p>
 
           {/* Theme Options Grid */}
           <div className="grid md:grid-cols-2 gap-6">

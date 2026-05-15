@@ -27,7 +27,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'question_text', 'order', 'is_coding', 'created_at', 'answer']
+        fields = ['id', 'question_text', 'order', 'is_coding', 'test_cases', 'starter_code', 'created_at', 'answer']
 
 
 class FinalResultSerializer(serializers.ModelSerializer):
@@ -65,6 +65,22 @@ class ProcessResponseSerializer(serializers.Serializer):
     session_id = serializers.IntegerField()
     answer_text = serializers.CharField()
     question_id = serializers.IntegerField()
+    # Optional: when the answer is explaining a submitted coding solution,
+    # the frontend passes the code + pass-rate so evaluation can weight correctness.
+    code = serializers.CharField(required=False, allow_blank=True, default='')
+    language = serializers.CharField(required=False, allow_blank=True, default='')
+    coding_score = serializers.FloatField(required=False, default=None, allow_null=True)
+    passed_count = serializers.IntegerField(required=False, default=0)
+    total_cases = serializers.IntegerField(required=False, default=0)
+
+
+class SubmitCodeSerializer(serializers.Serializer):
+    session_id = serializers.IntegerField()
+    question_id = serializers.IntegerField()
+    code = serializers.CharField()
+    language = serializers.CharField(required=False, default='javascript')
+    passed_count = serializers.IntegerField(default=0)
+    total_cases = serializers.IntegerField(default=0)
 
 
 class CodeUpdateSerializer(serializers.Serializer):

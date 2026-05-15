@@ -13,11 +13,21 @@ from django.contrib.auth import get_user_model
 from .models import InterviewSession, ConversationHistory, Question, Answer, Evaluation, FinalResult, CodeSnapshot
 from .serializers import (
     StartInterviewSerializer, ProcessResponseSerializer,
-    InterviewSessionSerializer, FinalResultSerializer, CodeUpdateSerializer, ExecuteCodeSerializer
+    InterviewSessionSerializer, FinalResultSerializer, CodeUpdateSerializer, ExecuteCodeSerializer,
+    SubmitCodeSerializer,
 )
 from . import gemini_service
-from .tts_service import text_to_speech_file
-from .judge0_service import execute_code
+from .tts_service import text_to_speech_file as _tts_file
+from .judge0_service import execute_code, Judge0Error
+
+
+def _safe_tts(text: str) -> str:
+    """Wrap gTTS so upstream failures don't take the whole endpoint with them."""
+    try:
+        return _tts_file(text)
+    except Exception as e:
+        print(f'TTS failed (ignored): {e}')
+        return ''
 
 
 class StartInterviewView(APIView):
@@ -66,6 +76,8 @@ class StartInterviewView(APIView):
 
             question_text = ai_data.get('question', 'Tell me about yourself and your background.')
             is_coding = ai_data.get('is_coding', False)
+            test_cases = ai_data.get('test_cases', []) if is_coding else []
+            starter_code = ai_data.get('starter_code', {}) if is_coding else {}
 
             # Save question to DB
             question = Question.objects.create(
@@ -73,6 +85,8 @@ class StartInterviewView(APIView):
                 question_text=question_text,
                 order=1,
                 is_coding=is_coding,
+                test_cases=test_cases,
+                starter_code=starter_code,
             )
 
             # Save to conversation history
@@ -83,13 +97,15 @@ class StartInterviewView(APIView):
             )
 
             # Generate TTS audio (backend fallback)
-            audio_url = text_to_speech_file(question_text)
+            audio_url = _safe_tts(question_text)
 
             return Response({
                 'session_id': session.id,
                 'question_id': question.id,
                 'question': question_text,
                 'is_coding': is_coding,
+                'test_cases': test_cases,
+                'starter_code': starter_code,
                 'audio_url': request.build_absolute_uri(audio_url),
                 'question_number': 1,
                 'total_questions': session.max_questions,
@@ -138,10 +154,19 @@ class ProcessResponseView(APIView):
         except Question.DoesNotExist:
             return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Save candidate answer
-        answer = Answer.objects.create(
+        # Save candidate answer. If one already exists for this question
+        # (e.g. the user answered, then spoke again), update it instead of erroring.
+        combined_text = data['answer_text']
+        if data.get('code'):
+            combined_text = (
+                f"{data['answer_text']}\n\n"
+                f"--- Submitted code ({data.get('language') or 'code'}, "
+                f"{data.get('passed_count', 0)}/{data.get('total_cases', 0)} tests passed) ---\n"
+                f"{data['code']}"
+            )
+        answer, _ = Answer.objects.update_or_create(
             question=question,
-            answer_text=data['answer_text'],
+            defaults={'answer_text': combined_text},
         )
 
         # Save to conversation history
@@ -161,6 +186,24 @@ class ProcessResponseView(APIView):
         question_number = session.current_question_count
         is_last = question_number >= session.max_questions
 
+        # When this /respond/ call is answering the post-submission follow-up
+        # (we know because `code` was sent), reframe the context so Gemini
+        # doesn't mistake it for an unanswered coding question and re-ask it.
+        if data.get('code'):
+            last_ai = next(
+                (c.message_text for c in reversed(list(session.conversation.all()))
+                 if c.speaker == 'AI'),
+                question.question_text,
+            )
+            current_q_for_ai = (
+                f"[CODE ALREADY SUBMITTED AND PASSED {data.get('passed_count', 0)}/"
+                f"{data.get('total_cases', 0)} TEST CASES for the problem: "
+                f"{question.question_text[:200]}...] "
+                f"The candidate is now answering this follow-up: \"{last_ai}\""
+            )
+        else:
+            current_q_for_ai = question.question_text
+
         try:
             ai_data = gemini_service.evaluate_and_next_question(
                 role=session.role,
@@ -169,7 +212,7 @@ class ProcessResponseView(APIView):
                 difficulty=session.difficulty,
                 company=session.company,
                 conversation_history=conv_history,
-                current_question=question.question_text,
+                current_question=current_q_for_ai,
                 candidate_answer=data['answer_text'],
                 question_number=question_number,
                 total_questions=session.max_questions,
@@ -180,14 +223,31 @@ class ProcessResponseView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        # Save evaluation
+        # Save evaluation. If this answer already had one, update in place.
         eval_data = ai_data.get('evaluation', {})
-        evaluation = Evaluation.objects.create(
+        explanation_score = float(eval_data.get('score', 5) or 5)
+
+        # When the candidate submitted code alongside this answer, blend the coding
+        # correctness score (from pass-ratio + the follow-up's coding_score) with
+        # the explanation score so the final evaluation reflects both.
+        final_score = explanation_score
+        coding_score = data.get('coding_score')
+        total_cases = data.get('total_cases', 0) or 0
+        passed_count = data.get('passed_count', 0) or 0
+        if data.get('code') and total_cases > 0:
+            pass_ratio_score = (passed_count / total_cases) * 10.0
+            code_component = float(coding_score) if coding_score is not None else pass_ratio_score
+            # 60% code correctness, 40% explanation quality.
+            final_score = round(0.6 * code_component + 0.4 * explanation_score, 1)
+
+        evaluation, _ = Evaluation.objects.update_or_create(
             answer=answer,
-            score=eval_data.get('score', 5),
-            feedback=eval_data.get('feedback', ''),
-            strengths=eval_data.get('strengths', ''),
-            weaknesses=eval_data.get('weaknesses', ''),
+            defaults={
+                'score': final_score,
+                'feedback': eval_data.get('feedback', ''),
+                'strengths': eval_data.get('strengths', ''),
+                'weaknesses': eval_data.get('weaknesses', ''),
+            },
         )
 
         # Update difficulty if adapted
@@ -211,6 +271,8 @@ class ProcessResponseView(APIView):
         if not ai_data.get('is_finished', is_last):
             next_text = ai_data.get('next_question', '')
             next_is_coding = ai_data.get('is_coding', False)
+            next_tests = ai_data.get('test_cases', []) if next_is_coding else []
+            next_starter = ai_data.get('starter_code', {}) if next_is_coding else {}
 
             if next_text:
                 next_question = Question.objects.create(
@@ -218,6 +280,8 @@ class ProcessResponseView(APIView):
                     question_text=next_text,
                     order=question_number + 1,
                     is_coding=next_is_coding,
+                    test_cases=next_tests,
+                    starter_code=next_starter,
                 )
 
                 ConversationHistory.objects.create(
@@ -226,12 +290,14 @@ class ProcessResponseView(APIView):
                     message_text=next_text,
                 )
 
-                audio_url = text_to_speech_file(next_text)
+                audio_url = _safe_tts(next_text)
 
                 response_payload.update({
                     'next_question_id': next_question.id,
                     'next_question': next_text,
                     'is_coding': next_is_coding,
+                    'test_cases': next_tests,
+                    'starter_code': next_starter,
                     'audio_url': request.build_absolute_uri(audio_url),
                 })
         else:
@@ -240,6 +306,63 @@ class ProcessResponseView(APIView):
             session.save()
 
         return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class SubmitCodeView(APIView):
+    """
+    POST /api/interviews/submit-code/
+    Candidate submits their coding solution. Returns a single probing follow-up
+    question the interviewer asks next. No Answer row is created here — that
+    happens when the candidate answers the follow-up via /respond/.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SubmitCodeSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = serializer.validated_data
+
+        try:
+            session = InterviewSession.objects.get(id=data['session_id'])
+        except InterviewSession.DoesNotExist:
+            return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            question = Question.objects.get(id=data['question_id'], session=session)
+        except Question.DoesNotExist:
+            return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Persist the submitted code as a CodeSnapshot so it shows up in history.
+        CodeSnapshot.objects.create(
+            session=session,
+            code_text=data['code'],
+            language=data.get('language', 'javascript'),
+        )
+
+        followup = gemini_service.generate_code_followup(
+            question_text=question.question_text,
+            code=data['code'],
+            language=data.get('language', 'javascript'),
+            passed_count=data.get('passed_count', 0),
+            total_cases=data.get('total_cases', 0),
+        )
+
+        ConversationHistory.objects.create(
+            session=session,
+            speaker='AI',
+            message_text=followup.get('followup_question', ''),
+        )
+
+        audio_url = _safe_tts(followup.get('followup_question', ''))
+
+        return Response({
+            'followup_question': followup.get('followup_question', ''),
+            'optimization_hint': followup.get('optimization_hint', ''),
+            'coding_score': followup.get('coding_score', 5),
+            'strengths': followup.get('strengths', ''),
+            'weaknesses': followup.get('weaknesses', ''),
+            'audio_url': request.build_absolute_uri(audio_url) if audio_url else '',
+        }, status=status.HTTP_200_OK)
 
 
 class EndInterviewView(APIView):
@@ -376,7 +499,7 @@ class TTSView(APIView):
             return Response({'error': 'text is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            audio_url = text_to_speech_file(text)
+            audio_url = _safe_tts(text)
             return Response({'audio_url': request.build_absolute_uri(audio_url)})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -459,13 +582,16 @@ class ExecuteCodeView(APIView):
                 language_id=data.get('language_id', 63),
                 stdin=data.get('stdin', ''),
             )
+        except Judge0Error as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
         except Exception as e:
-            return Response({
-                'passed': False,
-                'output': '',
-                'status': 'Execution Error',
-                'feedback': str(e),
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {'error': f'Unexpected execution failure: {e}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # Determine success/failure from Judge0 response
         status_id = result.get('status_id') or (result.get('status') or {}).get('id', 0)
