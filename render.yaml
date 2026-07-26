@@ -30,10 +30,8 @@ services:
         value: "ce.judge0.com"
       - key: JUDGE0_API_KEY
         value: ""
-      # Set this to the frontend URL after the first deploy, e.g.
-      # https://crackitnow-frontend.onrender.com
       - key: FRONTEND_ORIGINS
-        sync: false
+        value: "https://crackitnow-frontend.onrender.com"
       - key: DATABASE_URL
         fromDatabase:
           name: crackitnow-db
@@ -47,9 +45,9 @@ services:
     buildCommand: "npm ci && npm run build"
     staticPublishPath: dist
     envVars:
-      # Point the SPA at the backend. Update the host to match your backend URL.
+      # Points the SPA at the backend (baked in at build time).
       - key: VITE_API_URL
-        sync: false
+        value: "https://crackitnow-backend.onrender.com/api"
     routes:
       # SPA fallback so React Router deep links work on refresh.
       - type: rewrite
