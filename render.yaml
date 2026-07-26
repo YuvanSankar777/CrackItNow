@@ -22,12 +22,14 @@ services:
         value: ".onrender.com"
       - key: GEMINI_API_KEY
         sync: false
+      # Keyless public Judge0 works out of the box. For production reliability,
+      # switch these to RapidAPI (judge0-ce.p.rapidapi.com) + set JUDGE0_API_KEY.
       - key: JUDGE0_API_URL
-        value: "https://judge0-ce.p.rapidapi.com"
+        value: "https://ce.judge0.com"
       - key: JUDGE0_API_HOST
-        value: "judge0-ce.p.rapidapi.com"
+        value: "ce.judge0.com"
       - key: JUDGE0_API_KEY
-        sync: false
+        value: ""
       # Set this to the frontend URL after the first deploy, e.g.
       # https://crackitnow-frontend.onrender.com
       - key: FRONTEND_ORIGINS
