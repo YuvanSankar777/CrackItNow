@@ -420,13 +420,18 @@ class EndInterviewView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-        final_result = FinalResult.objects.create(
+        # update_or_create keeps this idempotent: if two /end/ calls race
+        # (e.g. React StrictMode double-invoke), the second updates rather than
+        # hitting a UNIQUE-constraint error on session_id.
+        final_result, _ = FinalResult.objects.update_or_create(
             session=session,
-            overall_score=report_data.get('overall_score', 0),
-            summary=report_data.get('summary', ''),
-            recommendation=report_data.get('recommendation', ''),
-            strengths=report_data.get('strengths', ''),
-            weaknesses=report_data.get('weaknesses', ''),
+            defaults={
+                'overall_score': report_data.get('overall_score', 0),
+                'summary': report_data.get('summary', ''),
+                'recommendation': report_data.get('recommendation', ''),
+                'strengths': report_data.get('strengths', ''),
+                'weaknesses': report_data.get('weaknesses', ''),
+            },
         )
 
         if not session.is_completed:
@@ -620,16 +625,18 @@ class ExecuteCodeView(APIView):
         elif stderr and not passed:
             display_output = stderr
 
-        # Analyze complexity using Gemini (optional, non-blocking)
+        # Analyze complexity using Gemini — only when explicitly requested.
+        # Skipping it for per-test-case runs keeps "Run" fast (no AI round-trip).
         language = data.get('language', 'javascript')
         complexity_analysis = {}
-        try:
-            complexity_analysis = gemini_service.analyze_code_complexity(
-                code_text=data['source_code'],
-                language=language,
-            )
-        except Exception:
-            pass
+        if data.get('analyze'):
+            try:
+                complexity_analysis = gemini_service.analyze_code_complexity(
+                    code_text=data['source_code'],
+                    language=language,
+                )
+            except Exception:
+                pass
 
         response_data = {
             'passed': passed,

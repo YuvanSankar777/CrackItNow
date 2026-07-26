@@ -1,0 +1,61 @@
+# Render Blueprint for CrackItNow — one Django backend + one static React frontend.
+# Deploy: push to GitHub, then in Render → "New +" → "Blueprint" → pick this repo.
+# Fill in the env vars marked `sync: false` in the Render dashboard.
+services:
+  # ── Backend: Django API ──────────────────────────────
+  - type: web
+    name: crackitnow-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application"
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JUDGE0_API_URL
+        value: "https://judge0-ce.p.rapidapi.com"
+      - key: JUDGE0_API_HOST
+        value: "judge0-ce.p.rapidapi.com"
+      - key: JUDGE0_API_KEY
+        sync: false
+      # Set this to the frontend URL after the first deploy, e.g.
+      # https://crackitnow-frontend.onrender.com
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crackitnow-db
+          property: connectionString
+
+  # ── Frontend: static React (Vite) ───────────────────
+  - type: web
+    name: crackitnow-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: "npm ci && npm run build"
+    staticPublishPath: dist
+    envVars:
+      # Point the SPA at the backend. Update the host to match your backend URL.
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      # SPA fallback so React Router deep links work on refresh.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: crackitnow-db
+    plan: free
+    databaseName: crackitnow
+    user: crackitnow

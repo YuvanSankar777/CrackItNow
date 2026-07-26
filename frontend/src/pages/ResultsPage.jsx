@@ -12,15 +12,8 @@ const ResultsPage = () => {
   useEffect(() => {
     const loadResults = async () => {
       try {
-        // First, try to end the interview and generate the report
-        // (safe to call multiple times — backend returns existing result)
-        try {
-          await interviewAPI.end({ session_id: Number(id) });
-        } catch {
-          // Already ended or no evaluations yet — that's fine
-        }
-
-        // Now fetch the session with the result
+        // Safe to call multiple times — backend returns the existing result.
+        try { await interviewAPI.end({ session_id: Number(id) }); } catch { /* already ended */ }
         const { data } = await interviewAPI.results(id);
         setSession(data);
       } catch (e) {
@@ -36,149 +29,115 @@ const ResultsPage = () => {
   if (loading) return (
     <div className="h-screen flex flex-col items-center justify-center gap-4">
       <div className="flex gap-1.5">
-        {[0,1,2].map(i => (
-          <div key={i} className="w-2 h-2 rounded-full bg-theme-text-muted animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
-          />
-        ))}
+        {[0, 1, 2].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full animate-bounce" style={{ background: 'var(--clay-violet)', animationDelay: `${i * 0.15}s` }} />)}
       </div>
-      <p className="text-theme-text-muted text-sm font-mono uppercase tracking-widest">Generating Report...</p>
+      <p className="clay-ink-faint text-sm clay-display uppercase tracking-widest">Generating report…</p>
     </div>
   );
 
   if (error) return (
     <div className="h-screen flex flex-col items-center justify-center gap-6 px-6 text-center">
-      <p className="text-theme-text-muted">{error}</p>
-      <button onClick={() => navigate('/setup')} className="btn-primary">Back to Setup</button>
+      <p className="clay-ink-soft">{error}</p>
+      <button onClick={() => navigate('/setup')} className="clay-btn">Back to setup</button>
     </div>
   );
 
   if (!session || !session.result) return (
     <div className="h-screen flex flex-col items-center justify-center gap-6 px-6 text-center">
-      <p className="text-theme-text-muted text-sm">No report found for this session.</p>
-      <button onClick={() => navigate('/setup')} className="btn-primary">Start New Session</button>
+      <p className="clay-ink-soft text-sm">No report found for this session.</p>
+      <button onClick={() => navigate('/companies')} className="clay-btn">Start new session</button>
     </div>
   );
 
   const res = session.result;
   const scorePercentage = (res.overall_score / 10) * 100;
-  const scoreColor = res.overall_score >= 8 ? 'text-green-500' : res.overall_score >= 6 ? 'text-yellow-500' : 'text-orange-500';
+  const scoreColor = res.overall_score >= 8 ? 'var(--clay-mint)' : res.overall_score >= 6 ? 'var(--clay-gold)' : 'var(--clay-coral)';
+  const metrics = [
+    ['Communication', res.communication_score],
+    ['Problem Solving', res.problem_solving_score],
+    ['Technical Knowledge', res.technical_score],
+    ['Code Quality', res.code_quality_score],
+  ];
 
   return (
-    <div className="min-h-screen bg-theme-bg py-12 md:py-20">
-      <div className="container max-w-6xl space-y-8">
+    <div className="min-h-screen py-12 md:py-16">
+      <div className="container max-w-5xl mx-auto px-4 space-y-7">
         {/* Header */}
-        <section className="card-premium overflow-hidden">
+        <section className="clay-card p-8">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
             <div>
-              <h1 className="text-4xl md:text-5xl font-serif mb-2 text-theme-text">Interview Results</h1>
-              <p className="font-mono text-sm tracking-widest uppercase text-theme-text-muted">
-                {session.role || 'Interview'} • {session.level || 'Mid'} Level • {session.difficulty || 'General'}
+              <span className="clay-eyebrow">Interview report</span>
+              <h1 className="clay-display text-4xl md:text-5xl mt-2 mb-2">Your results</h1>
+              <p className="clay-display text-sm tracking-widest uppercase clay-ink-faint">
+                {session.company || session.role || 'Interview'} · {session.level || 'Mid'} · {session.difficulty || 'General'}
               </p>
             </div>
-            <div className="text-right space-y-2">
-              <div className="text-sm uppercase tracking-widest font-mono text-theme-text-muted">Overall Score</div>
-              <div className={`text-6xl font-serif ${scoreColor}`}>
-                {res.overall_score}
-                <span className="text-2xl text-theme-text-muted ml-2">/10</span>
+            <div className="text-right">
+              <div className="text-xs uppercase tracking-widest clay-display clay-ink-faint mb-1">Overall score</div>
+              <div className="clay-display" style={{ fontSize: 60, lineHeight: 1, color: scoreColor }}>
+                {res.overall_score}<span className="text-2xl clay-ink-faint ml-2">/10</span>
               </div>
-              <div className="w-full bg-theme-surface rounded-full h-2 border border-theme-border">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    res.overall_score >= 8 ? 'bg-green-500' : 
-                    res.overall_score >= 6 ? 'bg-yellow-500' : 'bg-orange-500'
-                  }`}
-                  style={{ width: `${scorePercentage}%` }}
-                />
+              <div className="w-full mt-3 rounded-full h-2.5 clay-well" style={{ minWidth: 200 }}>
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${scorePercentage}%`, background: scoreColor }} />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Executive Summary */}
-        <section className="card-premium">
-          <h2 className="text-xl font-bold mb-4 text-theme-text flex items-center gap-2">
-            <svg className="w-5 h-5 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Executive Summary
-          </h2>
-          <p className="text-theme-text-muted leading-relaxed">{res.summary || 'No summary available.'}</p>
+        {/* Summary */}
+        <section className="clay-card p-7">
+          <h2 className="clay-display text-xl mb-3">Executive summary</h2>
+          <p className="clay-ink-soft leading-relaxed">{res.summary || 'No summary available.'}</p>
         </section>
 
-        {/* Performance Metrics */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card-premium">
-            <p className="text-xs uppercase tracking-widest font-mono text-theme-text-muted mb-2">Communication</p>
-            <p className={`text-3xl font-serif ${scoreColor}`}>{res.communication_score?.toFixed(1) || res.overall_score}/10</p>
-          </div>
-          <div className="card-premium">
-            <p className="text-xs uppercase tracking-widest font-mono text-theme-text-muted mb-2">Problem Solving</p>
-            <p className={`text-3xl font-serif ${scoreColor}`}>{res.problem_solving_score?.toFixed(1) || res.overall_score}/10</p>
-          </div>
-          <div className="card-premium">
-            <p className="text-xs uppercase tracking-widest font-mono text-theme-text-muted mb-2">Technical Knowledge</p>
-            <p className={`text-3xl font-serif ${scoreColor}`}>{res.technical_score?.toFixed(1) || res.overall_score}/10</p>
-          </div>
-          <div className="card-premium">
-            <p className="text-xs uppercase tracking-widest font-mono text-theme-text-muted mb-2">Code Quality</p>
-            <p className={`text-3xl font-serif ${scoreColor}`}>{res.code_quality_score?.toFixed(1) || res.overall_score}/10</p>
-          </div>
+        {/* Metrics */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {metrics.map(([label, val]) => (
+            <div key={label} className="clay-card-sm p-5">
+              <p className="text-[11px] uppercase tracking-widest clay-display clay-ink-faint mb-2">{label}</p>
+              <p className="clay-display text-3xl" style={{ color: scoreColor }}>{(val ?? res.overall_score)?.toFixed ? (val ?? res.overall_score).toFixed(1) : (val ?? res.overall_score)}/10</p>
+            </div>
+          ))}
         </div>
 
-        {/* Strengths & Weaknesses */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          <section className="card-premium">
-            <h2 className="text-xl font-bold mb-4 text-theme-text flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.488 5.951 1.488a1 1 0 001.169-1.409l-7-14z" />
-              </svg>
-              Key Strengths
-            </h2>
+        {/* Strengths & growth */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          <section className="clay-card p-7">
+            <h2 className="clay-display text-xl mb-4">Key strengths</h2>
             <ul className="space-y-3">
-              {(res.strengths || 'Excellent communication and approach').split('\n').filter(Boolean).map((strength, idx) => (
-                <li key={idx} className="flex gap-3 text-sm text-theme-text-muted">
-                  <span className="text-green-500 font-bold">✓</span>
-                  <span>{strength.trim()}</span>
+              {(res.strengths || 'Excellent communication and approach').split('\n').filter(Boolean).map((s, idx) => (
+                <li key={idx} className="flex gap-3 text-sm clay-ink-soft">
+                  <span className="clay-display" style={{ color: 'var(--clay-mint)' }}>✓</span>
+                  <span>{s.trim()}</span>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section className="card-premium">
-            <h2 className="text-xl font-bold mb-4 text-theme-text flex items-center gap-2">
-              <svg className="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M13.816 4.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zm2.414 5.002a1 1 0 00-.447-1.745L10 7.5l-5.783 2.257a1 1 0 00-.447 1.745l2.8 2.42a1 1 0 00.211 1.381L10 16.944l2.219-2.141a1 1 0 00.211-1.381l2.8-2.42z" clipRule="evenodd" />
-              </svg>
-              Areas for Growth
-            </h2>
+          <section className="clay-card p-7">
+            <h2 className="clay-display text-xl mb-4">Areas for growth</h2>
             <ul className="space-y-3">
-              {(res.weaknesses || 'Consider edge case handling').split('\n').filter(Boolean).map((weakness, idx) => (
-                <li key={idx} className="flex gap-3 text-sm text-theme-text-muted">
-                  <span className="text-orange-500 font-bold">→</span>
-                  <span>{weakness.trim()}</span>
+              {(res.weaknesses || 'Consider edge-case handling').split('\n').filter(Boolean).map((w, idx) => (
+                <li key={idx} className="flex gap-3 text-sm clay-ink-soft">
+                  <span className="clay-display" style={{ color: 'var(--clay-coral)' }}>→</span>
+                  <span>{w.trim()}</span>
                 </li>
               ))}
             </ul>
           </section>
         </div>
 
-        {/* Code Analysis */}
+        {/* Code analysis */}
         {session.code_snapshots && session.code_snapshots.length > 0 && (
-          <section className="card-premium">
-            <h2 className="text-xl font-bold mb-4 text-theme-text flex items-center gap-2">
-              <svg className="w-5 h-5 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4m0 6l-4 4m-4-4l-4-4" />
-              </svg>
-              Code Analysis
-            </h2>
+          <section className="clay-card p-7">
+            <h2 className="clay-display text-xl mb-4">Code analysis</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {session.code_snapshots.map((snapshot, idx) => (
-                <div key={idx} className="bg-theme-bg rounded border border-theme-border p-4">
-                  <p className="text-xs uppercase tracking-widest font-mono text-theme-accent mb-2">Question {snapshot.question_number}</p>
-                  <p className="text-sm text-theme-text-muted mb-2 font-mono">{snapshot.language}</p>
+                <div key={idx} className="clay-well p-4">
+                  <p className="text-xs uppercase tracking-widest clay-display mb-1" style={{ color: 'var(--clay-violet)' }}>Question {snapshot.question_number}</p>
+                  <p className="text-sm clay-ink-faint mb-2" style={{ fontFamily: 'var(--fm, ui-monospace)' }}>{snapshot.language}</p>
                   {snapshot.complexity_analysis && (
-                    <div className="text-xs text-theme-text-muted space-y-1">
+                    <div className="text-xs clay-ink-soft space-y-1">
                       <p>Time: {snapshot.complexity_analysis.time_complexity}</p>
                       <p>Space: {snapshot.complexity_analysis.space_complexity}</p>
                     </div>
@@ -191,28 +150,12 @@ const ResultsPage = () => {
 
         {/* Recommendation */}
         {res.recommendation && (
-          <section className="card-premium border-2 border-theme-accent/30">
-            <h2 className="text-xl font-bold mb-4 text-theme-text flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Next Steps & Recommendations
-            </h2>
-            <p className="text-lg text-theme-text-muted leading-relaxed mb-6">{res.recommendation}</p>
-            
+          <section className="clay-card p-7" style={{ background: 'linear-gradient(150deg,#E4DBFA,#DCEEFF)' }}>
+            <h2 className="clay-display text-xl mb-3">Next steps & recommendations</h2>
+            <p className="text-lg clay-ink-soft leading-relaxed mb-6">{res.recommendation}</p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <button 
-                onClick={() => navigate('/setup')}
-                className="btn-primary flex-1"
-              >
-                Practice Again
-              </button>
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="btn-secondary flex-1"
-              >
-                Back to Dashboard
-              </button>
+              <button onClick={() => navigate('/companies')} className="clay-btn flex-1 justify-center">Practice again</button>
+              <button onClick={() => navigate('/dashboard')} className="clay-btn-ghost flex-1 justify-center">Back to dashboard</button>
             </div>
           </section>
         )}

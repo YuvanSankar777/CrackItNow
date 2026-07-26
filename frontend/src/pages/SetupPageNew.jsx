@@ -41,54 +41,55 @@ const SetupPageNew = () => {
     }
   };
 
+  const logo = company ? `https://www.google.com/s2/favicons?domain=${company.toLowerCase().replace(/\s+/g, '')}.com&sz=128` : null;
+
   return (
-    <div className="min-h-screen bg-theme-bg flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full space-y-8">
-        <div className="text-center space-y-2">
-          <p className="text-[10px] uppercase tracking-widest text-theme-text-muted font-mono">Interview Setup</p>
-          <h1 className="text-4xl font-bold text-theme-text">
-            {company || 'General'} <span className="text-theme-accent">Interview</span>
-          </h1>
-          <p className="text-theme-text-muted">Choose a difficulty to begin</p>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="text-center mb-8">
+          <span className="clay-eyebrow">Interview Setup</span>
+          <div className="flex items-center justify-center gap-3 mt-3">
+            {logo && (
+              <span className="w-12 h-12 rounded-[15px] grid place-items-center clay-well">
+                <img src={logo} alt="" className="w-6 h-6" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              </span>
+            )}
+            <h1 className="clay-display text-4xl">
+              {company || 'General'} <span className="clay-grad-text">Interview</span>
+            </h1>
+          </div>
+          <p className="clay-ink-soft mt-2">Choose a difficulty to begin</p>
         </div>
 
-        <div className="bg-theme-surface rounded-2xl shadow-lg p-8 space-y-8 border border-theme-border">
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-theme-text">Select Difficulty</h2>
-            <p className="text-sm text-theme-text-muted">Choose the problem difficulty level</p>
+        <div className="clay-card p-8">
+          <h2 className="clay-display text-xl mb-1">Select difficulty</h2>
+          <p className="text-sm clay-ink-soft mb-5">Pick how challenging the problems should be.</p>
 
-            <div className="grid grid-cols-3 gap-4">
-              {difficulties.map((diff) => (
+          <div className="grid grid-cols-3 gap-4">
+            {difficulties.map((diff) => {
+              const on = difficulty === diff.id;
+              return (
                 <button
                   key={diff.id}
                   onClick={() => setDifficulty(diff.id)}
-                  className={`p-4 rounded-lg border-2 transition-all text-center ${
-                    difficulty === diff.id
-                      ? 'border-theme-accent bg-theme-accent/10'
-                      : 'border-theme-border hover:border-theme-border/80'
-                  }`}
+                  className={`clay-seg p-4 rounded-[18px] text-center ${on ? 'clay-seg-on' : ''}`}
+                  style={!on ? { background: 'linear-gradient(160deg,var(--clay-surface-2),var(--clay-surface))', boxShadow: 'var(--clay-shadow-sm)' } : undefined}
                 >
-                  <div className="font-bold text-theme-text mb-1">{diff.label}</div>
-                  <div className="text-xs text-theme-text-muted">{diff.description}</div>
+                  <div className="clay-display mb-1" style={{ color: on ? '#fff' : 'var(--clay-ink)' }}>{diff.label}</div>
+                  <div className="text-xs" style={{ color: on ? 'rgba(255,255,255,.85)' : 'var(--clay-ink-faint)' }}>{diff.description}</div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          <div className="pt-4">
-            <button
-              onClick={handleStart}
-              disabled={loading}
-              className="w-full py-4 bg-theme-accent hover:bg-blue-600 disabled:opacity-50 text-white font-bold rounded-lg transition-all text-lg"
-            >
-              {loading ? 'Starting Interview...' : 'Begin Interview'}
-            </button>
-          </div>
+          <button onClick={handleStart} disabled={loading} className="clay-btn w-full justify-center mt-8 text-lg disabled:opacity-60">
+            {loading ? 'Starting interview…' : 'Begin interview →'}
+          </button>
 
-          <div className="text-xs text-theme-text-muted text-center space-y-1 pt-4 border-t border-theme-border">
+          <div className="text-xs clay-ink-faint text-center mt-6 pt-5 flex flex-col gap-1" style={{ borderTop: '1px solid var(--clay-line)' }}>
             <p>Webcam will be activated during the interview</p>
             <p>Tab switching will be monitored</p>
-            <p>Your performance will be analyzed in real-time</p>
+            <p>Your performance is analyzed in real time</p>
           </div>
         </div>
       </div>

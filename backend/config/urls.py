@@ -2,11 +2,20 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from apps.interviews.views import (
     StartInterviewView, ProcessResponseView, EndInterviewView, ResultsView, CodeUpdateView
 )
 
+
+def health(_request):
+    """Public health check for load balancers / Render."""
+    return JsonResponse({'status': 'ok'})
+
+
 urlpatterns = [
+    path('', health, name='root-health'),
+    path('api/health/', health, name='health'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.accounts.urls')),
     path('api/interviews/', include('apps.interviews.urls')),

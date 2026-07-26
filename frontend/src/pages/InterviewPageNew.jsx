@@ -298,26 +298,27 @@ export default function InterviewPageNew() {
     setBotTab('result');
     setRunResult(null);
 
-    const runOne = (testStdin) =>
+    const runOne = (testStdin, analyze = false) =>
       interviewAPI.evaluateCode({
         source_code: code,
         language_id: LANG[lang].id,
         language:    lang,
         stdin:       testStdin,
         is_submission: isSubmit,
+        analyze,
       });
 
     try {
       if (testCases.length > 0) {
-        const results = [];
-        for (let i = 0; i < testCases.length; i++) {
-          const tc = testCases[i];
+        // Run every test case in parallel (no per-case AI analysis) so total
+        // time is one round-trip, not the sum of all of them.
+        const results = await Promise.all(testCases.map(async (tc, i) => {
           try {
             const { data } = await runOne(tc.stdin ?? '');
             const actual = (data.output || '').trim();
             const expected = (tc.expected_stdout || '').trim();
             const passed = data.passed && actual === expected;
-            results.push({
+            return {
               index: i + 1,
               passed,
               actual,
@@ -325,10 +326,10 @@ export default function InterviewPageNew() {
               stdin: tc.stdin ?? '',
               explanation: tc.explanation || '',
               status: data.status || (passed ? 'Accepted' : 'Wrong Answer'),
-            });
+            };
           } catch (err) {
             const msg = err?.response?.data?.error || err.message || 'Execution failed';
-            results.push({
+            return {
               index: i + 1,
               passed: false,
               actual: '',
@@ -336,9 +337,9 @@ export default function InterviewPageNew() {
               stdin: tc.stdin ?? '',
               explanation: tc.explanation || '',
               status: `Error: ${msg}`,
-            });
+            };
           }
-        }
+        }));
         const allPassed = results.every((r) => r.passed);
         const passedCount = results.filter((r) => r.passed).length;
         setRunResult({
@@ -383,8 +384,9 @@ export default function InterviewPageNew() {
           }
         }
       } else {
-        // No test cases — single run with custom stdin
-        const { data } = await runOne(stdin);
+        // No test cases — single run with custom stdin. Ask for the AI
+        // complexity analysis here since we actually display it.
+        const { data } = await runOne(stdin, true);
         setRunResult({
           status: data.status || (data.passed ? 'Accepted' : 'Wrong Answer'),
           summary: data.passed ? 'Executed successfully' : 'Execution finished with issues',
@@ -443,7 +445,7 @@ export default function InterviewPageNew() {
         {/* --- RIGHT: Timer + End --- */}
         <div className="flex items-center gap-4 min-w-[180px] justify-end">
           <span className="font-mono text-xs text-theme-text-muted tabular-nums">{fmt(timer)}</span>
-          <button onClick={() => doEnd()} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 transition-all">
+          <button onClick={() => doEnd()} className="clay-btn" style={{ padding: '8px 16px', fontSize: 12, background: 'linear-gradient(145deg,#FF9366,#F0602C)', boxShadow: '6px 8px 16px rgba(240,96,44,.34),-4px -4px 11px rgba(255,255,255,.6),inset 2px 2px 5px rgba(255,255,255,.35)' }}>
             End Session
           </button>
         </div>
@@ -829,13 +831,13 @@ export default function InterviewPageNew() {
             {/* Action bar */}
             <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-theme-bg border-t border-theme-border">
               <span className="text-[10px] text-theme-text-muted font-mono select-none">console</span>
-              <div className="flex gap-2">
+              <div className="flex gap-2.5">
                 <button onClick={() => runCode(false)} disabled={isRunning}
-                  className="px-5 py-1.5 rounded-lg bg-theme-border hover:bg-theme-border disabled:opacity-40 border border-theme-border text-theme-text text-xs font-semibold transition-all">
+                  className="clay-btn-ghost disabled:opacity-40" style={{ padding: '8px 18px', fontSize: 12 }}>
                   {isRunning ? 'Running…' : 'Run Code'}
                 </button>
                 <button onClick={() => runCode(true)} disabled={isRunning}
-                  className="px-5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-bold transition-all">
+                  className="clay-btn disabled:opacity-40" style={{ padding: '8px 18px', fontSize: 12, background: 'linear-gradient(145deg,var(--clay-mint),#12a97a)', boxShadow: '6px 8px 16px rgba(31,199,154,.35),-4px -4px 11px rgba(255,255,255,.6),inset 2px 2px 5px rgba(255,255,255,.35)' }}>
                   {isRunning ? 'Submitting…' : 'Submit'}
                 </button>
               </div>

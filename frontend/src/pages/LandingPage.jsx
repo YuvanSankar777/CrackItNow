@@ -1,219 +1,142 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import heroImg from '../assets/hero-cut.png';
+
+const FEATURES = [
+  {
+    title: 'Interactive Coding IDE',
+    body: 'Write and run code in real time — Python, Java, C++, JavaScript and more. Instant results on every solution.',
+    dot: 'var(--clay-violet)',
+    icon: 'M8 20h8a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z M12 18h.01',
+  },
+  {
+    title: 'AI-Powered Interviewer',
+    body: 'A voice-led AI panelist asks contextual questions about your answers and code, and adapts the difficulty as you go.',
+    dot: 'var(--clay-coral)',
+    icon: 'M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.01M9.663 17h4.673',
+  },
+  {
+    title: 'Detailed Analysis',
+    body: 'Deep insight on time & space complexity, optimization tips, and a scored report after every session.',
+    dot: 'var(--clay-mint)',
+    icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+  },
+];
+
+const CTA_POINTS = ['Adaptive difficulty levels', 'Real-time code evaluation', 'Voice interaction support', 'Performance analytics'];
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    const { clientX, clientY, currentTarget } = e;
-    const { left, top } = currentTarget.getBoundingClientRect();
-    setMousePos({ x: clientX - left, y: clientY - top });
-  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-theme-bg selection:bg-theme-accent selection:text-white">
+    <div className="min-h-screen flex flex-col">
       {/* ── Navigation ── */}
-      <header className="bg-white border-b border-theme-border/50 sticky top-0 z-50">
-        <nav className="container mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/logo.png" alt="CrackItNow Logo" className="w-10 h-10 object-contain shadow-lg shadow-theme-accent/10" />
-            <span className="text-xl font-bold tracking-tight text-theme-text uppercase">CrackItNow</span>
+      <header className="sticky top-0 z-50" style={{ background: 'linear-gradient(180deg,rgba(240,233,255,.9),rgba(240,233,255,.5))', backdropFilter: 'blur(14px)' }}>
+        <nav className="container mx-auto px-6 h-[68px] flex justify-between items-center">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+            <span className="w-10 h-10 rounded-[13px] grid place-items-center text-white"
+              style={{ background: 'linear-gradient(145deg,#8158FF,var(--clay-violet-deep))', boxShadow: '5px 6px 14px rgba(112,80,208,.4),-3px -3px 9px rgba(255,255,255,.7),inset 2px 2px 5px rgba(255,255,255,.4)' }}>
+              <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5"><path d="M6 9l-3 3 3 3M18 9l3 3-3 3M13 5l-2 14" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </span>
+            <span className="clay-display text-xl clay-ink">CrackItNow</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-9">
             {['Features', 'About', 'Pricing', 'Contact'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-semibold text-theme-text hover:text-theme-accent transition-colors">
-                {item}
-              </a>
+              <a key={item} href={`#${item.toLowerCase()}`} className="clay-display text-sm clay-ink-soft hover:text-[var(--clay-violet)] transition-colors">{item}</a>
             ))}
           </div>
 
-          <button
-            onClick={() => navigate('/auth')}
-            className="group flex items-center gap-2 bg-[#1e40af] hover:bg-theme-accent text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-md shadow-theme-accent/20 active:scale-95"
-          >
+          <button onClick={() => navigate('/auth')} className="clay-btn" style={{ padding: '11px 22px', fontSize: 14 }}>
             Login
-            <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
           </button>
         </nav>
       </header>
 
       <main className="flex-1">
-        <section
-          onMouseMove={handleMouseMove}
-          className="bg-hero-bg py-20 lg:py-32 relative overflow-hidden group"
-        >
-          {/* ── Cursor Follow Animation ── */}
-          <div
-            className="pointer-events-none absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{
-              background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(59, 130, 246, 0.08), transparent 80%)`
-            }}
-          />
-
-          <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center relative z-10">
-            <div className="max-w-2xl animate-slide-up">
-              <h1 className="text-5xl lg:text-7xl font-serif text-white! leading-[1.1] mb-8 font-bold [text-shadow:0_1px_20px_rgba(255,255,255,0.1)]">
-                Master your next <br />
-                <span className="text-theme-accent tracking-tight">Technical Interview</span>
-              </h1>
-              <p className="text-lg lg:text-xl text-white mb-12 leading-relaxed font-normal opacity-100">
-                Experience the first AI-driven platform that simulates high-stakes technical interviews.
-                Speak naturally, solve problems in our IDE, and receive instant, deep-learning feedback.
-              </p>
-
-              <div className="flex flex-wrap gap-5">
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="bg-white text-hero-bg hover:bg-gray-100 px-10 py-4 rounded-lg font-bold text-base transition-all transform hover:-translate-y-1 shadow-xl active:scale-95"
-                >
-                  Get Started
-                </button>
-                <button
-                  className="border-2 border-theme-accent/30 text-hero-text hover:bg-theme-accent/10 px-10 py-4 rounded-lg font-bold text-base transition-all transform hover:-translate-y-1 active:scale-95"
-                >
-                  Learn More
-                </button>
-              </div>
+        {/* ── Hero ── */}
+        <section className="container mx-auto px-6 pt-14 pb-20 lg:pb-28 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="clay-eyebrow">AI Mock Interviews</span>
+            <h1 className="clay-display leading-[1.02] mt-3 mb-5" style={{ fontSize: 'clamp(40px,5.6vw,66px)' }}>
+              Walk in <span className="clay-grad-text">already inside the room.</span>
+            </h1>
+            <p className="text-lg clay-ink-soft mb-8" style={{ maxWidth: '46ch' }}>
+              Voice-led mock interviews with an AI panelist, a live coding room, and instant, honest feedback — in a calm, tactile space that keeps you focused.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <button onClick={() => navigate('/auth')} className="clay-btn">Start a mock interview</button>
+              <a href="#features" className="clay-btn-ghost">See how it works</a>
             </div>
-
-            {/* AI Neural Decoration (CSS only, no images) */}
-            <div className="hidden lg:flex justify-center items-center relative">
-              <div className="neural-pulse">
-                <div className="glow-orb" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-48 h-48">
-                    {/* Concentric Decorative Rings */}
-                    {[1, 0.7, 0.4].map((scale, i) => (
-                      <div
-                        key={i}
-                        className="absolute inset-0 border-2 border-theme-accent/20 rounded-full animate-pulse"
-                        style={{ transform: `scale(${scale})`, animationDelay: `${i * 0.5}s` }}
-                      />
-                    ))}
-                    {/* Orbiting Elements */}
-                    <div className="absolute inset-0 animate-orbit">
-                      <div className="w-4 h-4 bg-theme-accent rounded-full shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
-                    </div>
-                    {/* Center Core */}
-                    <div className="absolute inset-4 bg-theme-accent/10 backdrop-blur-xl rounded-full border border-theme-accent/30 flex items-center justify-center shadow-inner">
-                      <div className="w-12 h-12 bg-white/10 rounded-full animate-breathe" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex flex-wrap gap-3 mt-9">
+              {[['10', 'company tracks'], ['12+', 'languages'], ['Real-time', 'scoring']].map(([b, t]) => (
+                <span key={t} className="clay-pill"><b style={{ color: 'var(--clay-violet)', fontSize: 15 }}>{b}</b> {t}</span>
+              ))}
             </div>
+          </div>
+
+          <div className="relative flex justify-center">
+            <img src={heroImg} alt="A developer at a laptop taking an AI mock interview"
+              className="clay-floaty w-full max-w-[620px]" style={{ filter: 'drop-shadow(0 28px 36px rgba(90,50,190,.30))' }} />
           </div>
         </section>
 
-        {/* ── Features Section ── */}
-        <section className="bg-theme-bg py-20 border-t border-theme-border">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl lg:text-5xl font-serif text-theme-text mb-4 font-bold">Why Choose CrackItNow?</h2>
-              <p className="text-theme-text-muted max-w-2xl mx-auto text-lg">
-                Experience the future of technical interview preparation with AI-powered coaching.
-              </p>
-            </div>
+        {/* ── Features ── */}
+        <section id="features" className="container mx-auto px-6 py-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <span className="clay-eyebrow">Why CrackItNow</span>
+            <h2 className="clay-display mt-3 mb-3 leading-tight" style={{ fontSize: 'clamp(28px,4vw,42px)' }}>Everything you need to prepare, in one calm room.</h2>
+            <p className="clay-ink-soft text-lg">AI-powered coaching that feels like the real thing — without the pressure.</p>
+          </div>
 
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Feature 1 */}
-              <div className="bg-theme-surface rounded-xl p-8 border border-theme-border hover:border-theme-accent transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-theme-accent/20 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 20h8a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-theme-text mb-2">Interactive Coding IDE</h3>
-                <p className="text-theme-text-muted">
-                  Write and test code in real-time with support for Python, Java, C++, and JavaScript. Get instant feedback on your solutions.
-                </p>
+          <div className="grid md:grid-cols-3 gap-7">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="clay-card p-8">
+                <span className="w-14 h-14 rounded-[16px] grid place-items-center mb-5 clay-well" style={{ color: 'var(--clay-violet)' }}>
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} /></svg>
+                </span>
+                <h3 className="clay-display text-xl clay-ink mb-2">{f.title}</h3>
+                <p className="clay-ink-soft">{f.body}</p>
               </div>
-
-              {/* Feature 2 */}
-              <div className="bg-theme-surface rounded-xl p-8 border border-theme-border hover:border-theme-accent transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-theme-accent/20 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.01" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-theme-text mb-2">AI-Powered Interviewer</h3>
-                <p className="text-theme-text-muted">
-                  Our advanced AI mimics real interviewers, asking contextual questions based on your code and providing personalized feedback.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="bg-theme-surface rounded-xl p-8 border border-theme-border hover:border-theme-accent transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-theme-accent/20 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7 text-theme-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-theme-text mb-2">Detailed Analysis</h3>
-                <p className="text-theme-text-muted">
-                  Get in-depth insights on time complexity, space complexity, and optimization suggestions for every solution.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
-        {/* ── CTA Section ── */}
-        <section className="bg-theme-surface py-20 border-t border-theme-border">
-          <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Left Content */}
-              <div className="space-y-6">
-                <h2 className="text-4xl font-serif font-bold text-theme-text">Ready to Master Interviews?</h2>
-                <p className="text-lg text-theme-text-muted leading-relaxed">
-                  Start practicing with our AI interviewer today. Get feedback, track progress, and build confidence for your next technical interview.
-                </p>
-                <ul className="space-y-3">
-                  {['Adaptive difficulty levels', 'Real-time code evaluation', 'Voice interaction support', 'Performance analytics'].map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-3">
-                      <div className="w-5 h-5 bg-theme-accent rounded-full flex items-center justify-center shrink-0">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <span className="text-theme-text">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+        {/* ── CTA ── */}
+        <section className="container mx-auto px-6 py-16">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+            <div>
+              <h2 className="clay-display leading-tight mb-4" style={{ fontSize: 'clamp(26px,3.4vw,38px)' }}>Ready to master interviews?</h2>
+              <p className="text-lg clay-ink-soft mb-6">Start practicing with the AI interviewer today. Get feedback, track your streak, and build real confidence for your next round.</p>
+              <ul className="flex flex-col gap-3">
+                {CTA_POINTS.map((p) => (
+                  <li key={p} className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full grid place-items-center shrink-0" style={{ background: 'linear-gradient(145deg,var(--clay-mint),#12a97a)', boxShadow: '3px 3px 8px rgba(31,199,154,.35)' }}>
+                      <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 011.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clipRule="evenodd" /></svg>
+                    </span>
+                    <span className="clay-ink">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              {/* Right CTA Card */}
-              <div className="bg-theme-bg rounded-2xl p-8 border border-theme-border">
-                <h3 className="text-2xl font-bold text-theme-text mb-4">Get Started Now</h3>
-                <p className="text-theme-text-muted mb-6">
-                  Start your free interview session and see how AI-powered coaching can transform your preparation.
-                </p>
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="w-full bg-theme-accent hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 mb-3"
-                >
-                  Start Practicing
-                </button>
-                <p className="text-xs text-theme-text-muted text-center">No credit card required • Free to try</p>
-              </div>
+            <div className="clay-card p-8">
+              <h3 className="clay-display text-2xl clay-ink mb-3">Get started now</h3>
+              <p className="clay-ink-soft mb-6">Begin a free interview session and see how AI-powered coaching transforms your prep.</p>
+              <button onClick={() => navigate('/auth')} className="clay-btn w-full justify-center mb-3">Start practicing</button>
+              <p className="text-xs clay-ink-faint text-center">No credit card required · Free to try</p>
             </div>
           </div>
         </section>
       </main>
 
       {/* ── Footer ── */}
-      <footer className="bg-white py-8 border-t border-theme-border/50">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-theme-text-muted">© 2026 CrackItNow. All rights reserved.</p>
-          <div className="flex gap-6 text-xs text-theme-text-muted">
-            <a href="#" className="hover:text-theme-accent">Privacy Policy</a>
-            <a href="#" className="hover:text-theme-accent">Terms of Service</a>
-          </div>
+      <footer className="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-3">
+        <p className="text-xs clay-ink-faint">© 2026 CrackItNow. All rights reserved.</p>
+        <div className="flex gap-6 text-xs clay-ink-faint">
+          <a href="#" className="hover:text-[var(--clay-violet)]">Privacy Policy</a>
+          <a href="#" className="hover:text-[var(--clay-violet)]">Terms of Service</a>
         </div>
       </footer>
     </div>

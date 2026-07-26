@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000/api';
+// Configurable per-environment. Set VITE_API_URL in production (e.g. on Render)
+// to your backend origin + /api. Falls back to local dev.
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -61,6 +63,7 @@ export const interviewAPI = {
     language:    data.language || 'javascript',
     stdin:       data.stdin || '',
     is_submission: data.is_submission || false,
+    analyze:     data.analyze || false,
   }),
   submitCode:    (data) => api.post('/interviews/submit-code/', data),
   end:           (data) => api.post('/interviews/end/', data),

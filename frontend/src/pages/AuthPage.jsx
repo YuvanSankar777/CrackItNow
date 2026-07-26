@@ -6,11 +6,8 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const { login, register } = useAuth();
   const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    name: '', email: '', password: '', passwordConfirm: ''
-  });
 
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', passwordConfirm: '' });
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
@@ -19,151 +16,88 @@ const AuthPage = () => {
       if (isLogin) {
         await login(formData.email, formData.password);
       } else {
-        if (formData.password !== formData.passwordConfirm) {
-          alert("Passwords do not match!");
-          return;
-        }
+        if (formData.password !== formData.passwordConfirm) { alert('Passwords do not match!'); return; }
         await register(formData.name, formData.email, formData.password, formData.passwordConfirm);
       }
       navigate('/dashboard');
     } catch (err) {
-      const errorMsg = err.response?.data?.password?.[0] || 
-                       err.response?.data?.non_field_errors?.[0] || 
-                       err.response?.data?.detail || 
-                       "Authentication Failed. Check credentials.";
+      const errorMsg = err.response?.data?.password?.[0] ||
+        err.response?.data?.non_field_errors?.[0] ||
+        err.response?.data?.detail ||
+        'Authentication failed. Check your credentials.';
       alert(errorMsg);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#F8FAFC]">
-      {/* ── Left Column (Animation & Branding) ── */}
-      <div className="w-full lg:w-1/2 bg-hero-bg flex flex-col justify-center items-center p-12 lg:p-24 relative overflow-hidden">
-        {/* Decorative Grid Overlay */}
-        <div className="absolute inset-0 neural-grid opacity-10 pointer-events-none" />
-        
-        <div className="relative z-10 text-center max-w-lg mb-16 animate-fade">
-          <h1 className="text-4xl lg:text-5xl font-serif !text-white font-bold leading-tight mb-4">
-            Welcome to <br />
-            <span className="text-theme-accent">CrackItNow</span>
-          </h1>
-          <p className="text-hero-muted text-lg lg:text-xl font-normal leading-relaxed opacity-80">
-            Connect, collaborate, and master your career with our AI-driven resources.
-          </p>
+    <div className="min-h-screen flex flex-col lg:flex-row items-stretch">
+      {/* ── Left: branding panel ── */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-12 lg:p-24 relative overflow-hidden"
+        style={{ background: 'linear-gradient(155deg,#7A50F5,#5528DC 60%,#8158FF)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(600px 400px at 20% 15%, rgba(255,255,255,.18), transparent 60%), radial-gradient(500px 400px at 90% 90%, rgba(255,138,91,.35), transparent 60%)' }} />
+        <div className="relative z-10 text-center max-w-lg">
+          <span className="w-16 h-16 rounded-[20px] grid place-items-center mx-auto mb-6 text-white"
+            style={{ background: 'rgba(255,255,255,.14)', boxShadow: 'inset 2px 2px 6px rgba(255,255,255,.25), 6px 8px 18px rgba(0,0,0,.15)' }}>
+            <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8"><path d="M6 9l-3 3 3 3M18 9l3 3-3 3M13 5l-2 14" stroke="white" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </span>
+          <h1 className="clay-display text-4xl lg:text-5xl leading-tight mb-4" style={{ color: '#fff', WebkitTextFillColor: '#fff' }}>Welcome to CrackItNow</h1>
+          <p className="text-lg" style={{ color: 'rgba(255,255,255,.85)' }}>Voice-led AI mock interviews, a live coding room, and honest feedback — master your next round.</p>
+          <div className="flex items-end justify-center gap-1.5 h-16 mt-10">
+            {[...Array(13)].map((_, i) => (
+              <span key={i} className="w-2 rounded-full clay-floaty" style={{ background: 'rgba(255,255,255,.5)', height: `${25 + (i * 17 % 65)}%`, animationDelay: `${i * 0.12}s`, animationDuration: '2.4s' }} />
+            ))}
+          </div>
         </div>
-
-        {/* ── Neural Pulse Wave Animation (Replcaes Image) ── */}
-        <div className="relative z-10 neural-wave-container w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-12 animate-slide-up shadow-2xl">
-          {[...Array(15)].map((_, i) => (
-            <div 
-              key={i} 
-              className="wave-bar" 
-              style={{ 
-                animationDelay: `${i * 0.15}s`,
-                height: `${20 + (i * 13 % 60)}%`
-              }} 
-            />
-          ))}
-        </div>
-        
-        {/* Subtle Bottom Glow */}
-        <div className="absolute bottom-[-10%] w-[120%] h-[20%] bg-theme-accent/20 blur-[100px] rounded-[100%] pointer-events-none" />
       </div>
 
-      {/* ── Right Column (Form Side) ── */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16 bg-white shadow-[-20px_0_40px_rgba(0,0,0,0.02)] relative z-20">
-        
-        {/* Toggle Switch */}
-        <div className="mb-12 animate-fade">
-          <div className="tab-pill">
-            <button 
-              onClick={() => setIsLogin(true)}
-              className={`tab-pill-btn ${isLogin ? 'active' : ''}`}
-            >
-              Login
-            </button>
-            <button 
-              onClick={() => setIsLogin(false)}
-              className={`tab-pill-btn ${!isLogin ? 'active' : ''}`}
-            >
-              Register
-            </button>
-          </div>
-        </div>
-
-        <div className="w-full max-w-md animate-slide-up">
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-3xl font-serif text-theme-text font-bold mb-2">
-              {isLogin ? 'Sign In to Account' : 'Register New Account'}
-            </h2>
-            <p className="text-theme-text-muted">Enter your details below to continue</p>
+      {/* ── Right: form ── */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16">
+        <div className="w-full max-w-md">
+          {/* toggle */}
+          <div className="clay-well p-1.5 flex mb-9 rounded-[16px]">
+            {[['Login', true], ['Register', false]].map(([label, val]) => (
+              <button key={label} onClick={() => setIsLogin(val)}
+                className={`flex-1 py-2.5 rounded-[12px] clay-display text-sm transition ${isLogin === val ? 'clay-seg-on' : 'clay-ink-soft'}`}>
+                {label}
+              </button>
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="mb-7">
+            <h2 className="clay-display text-3xl mb-1">{isLogin ? 'Sign in to your account' : 'Create your account'}</h2>
+            <p className="clay-ink-soft">Enter your details below to continue.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {!isLogin && (
-              <div className="animate-fade">
-                <label className="block text-sm font-semibold text-theme-text mb-2">Full Name</label>
-                <input 
-                  name="name" placeholder="Enter your Name" onChange={handleChange} required
-                  className="input-premium border-slate-200 focus:border-theme-accent transition-all hover:border-slate-300"
-                  value={formData.name}
-                />
+              <div>
+                <label className="block text-sm clay-display clay-ink mb-2">Full name</label>
+                <input name="name" placeholder="Enter your name" onChange={handleChange} required value={formData.name} className="clay-input" />
               </div>
             )}
             <div>
-              <label className="block text-sm font-semibold text-theme-text mb-2">Email Address</label>
-              <input 
-                name="email" type="email" placeholder="aaaa@example.com" onChange={handleChange} required
-                className="input-premium border-slate-200 focus:border-theme-accent transition-all hover:border-slate-300"
-                value={formData.email}
-              />
+              <label className="block text-sm clay-display clay-ink mb-2">Email address</label>
+              <input name="email" type="email" placeholder="you@example.com" onChange={handleChange} required value={formData.email} className="clay-input" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-theme-text mb-2">Password</label>
-              <div className="relative">
-                <input 
-                  name="password" type="password" placeholder="Enter your password" onChange={handleChange} required
-                  className="input-premium border-slate-200 focus:border-theme-accent transition-all hover:border-slate-300"
-                  value={formData.password}
-                />
-              </div>
+              <label className="block text-sm clay-display clay-ink mb-2">Password</label>
+              <input name="password" type="password" placeholder="Enter your password" onChange={handleChange} required value={formData.password} className="clay-input" />
             </div>
             {!isLogin && (
-              <div className="animate-fade">
-                <label className="block text-sm font-semibold text-theme-text mb-2">Confirm Password</label>
-                <input 
-                  name="passwordConfirm" type="password" placeholder="Confirm your password" onChange={handleChange} required
-                  className="input-premium border-slate-200 focus:border-theme-accent transition-all hover:border-slate-300"
-                  value={formData.passwordConfirm}
-                />
+              <div>
+                <label className="block text-sm clay-display clay-ink mb-2">Confirm password</label>
+                <input name="passwordConfirm" type="password" placeholder="Confirm your password" onChange={handleChange} required value={formData.passwordConfirm} className="clay-input" />
               </div>
             )}
-
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-theme-accent focus:ring-theme-accent" />
-                <span className="text-xs text-theme-text-muted group-hover:text-theme-text transition-colors">I agree to the Terms & Conditions</span>
-              </label>
-              {isLogin && (
-                <button type="button" className="text-xs font-semibold text-[#1e40af] hover:text-theme-accent transition-colors">Forgot password?</button>
-              )}
-            </div>
-            
-            <button type="submit" className="btn-primary w-full mt-6 py-4 bg-[#64748b] hover:bg-slate-600 text-white shadow-lg font-bold">
-              {isLogin ? 'Sign In' : 'Sign Up'}
-            </button>
+            <button type="submit" className="clay-btn w-full justify-center mt-2 text-lg">{isLogin ? 'Sign in' : 'Create account'}</button>
           </form>
 
-          {/* Social Login */}
-          <div className="mt-8 text-center relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative px-4 bg-white text-[10px] text-slate-400 font-bold tracking-widest uppercase">OR</span>
-          </div>
-
-          <button className="w-full mt-8 py-3.5 border border-slate-100 rounded-lg flex items-center justify-center gap-3 hover:bg-slate-50 transition-all active:scale-95 text-slate-600 font-medium text-sm">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-            Sign in with Google
-          </button>
+          <p className="text-xs clay-ink-faint text-center mt-6">
+            {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            <button onClick={() => setIsLogin(!isLogin)} className="clay-display" style={{ color: 'var(--clay-violet)' }}>
+              {isLogin ? 'Register' : 'Sign in'}
+            </button>
+          </p>
         </div>
       </div>
     </div>

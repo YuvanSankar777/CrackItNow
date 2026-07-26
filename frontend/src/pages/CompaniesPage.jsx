@@ -21,17 +21,15 @@ const CompanyLogo = ({ company }) => {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <div className="w-14 h-14 rounded-xl bg-theme-accent/10 text-theme-accent flex items-center justify-center text-2xl font-bold">
+      <div className="w-12 h-12 rounded-[14px] clay-well flex items-center justify-center text-2xl clay-display" style={{ color: 'var(--clay-violet)' }}>
         {company.name[0]}
       </div>
     );
   }
   const src = company.logoUrl || `https://www.google.com/s2/favicons?domain=${company.domain}&sz=128`;
   // Wordmarks like IBM need extra horizontal room; square marks use a fixed box.
-  const sizing = company.wide ? 'h-10 w-auto max-w-[110px] object-contain' : 'w-14 h-14 object-contain';
-  return (
-    <img src={src} alt={`${company.name} logo`} className={sizing} loading="lazy" onError={() => setFailed(true)} />
-  );
+  const sizing = company.wide ? 'h-9 w-auto max-w-[100px] object-contain' : 'w-8 h-8 object-contain';
+  return <img src={src} alt={`${company.name} logo`} className={sizing} loading="lazy" onError={() => setFailed(true)} />;
 };
 
 const CompaniesPage = () => {
@@ -39,13 +37,13 @@ const CompaniesPage = () => {
   const go = (c) => navigate('/setup', { state: { company: c.id } });
 
   return (
-    <div className="min-h-screen bg-theme-bg py-12 md:py-20 animate-fade">
-      <div className="container max-w-6xl mx-auto px-4 space-y-8">
+    <div className="min-h-screen py-12 md:py-20">
+      <div className="container max-w-6xl mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif mb-4 text-theme-text">Select Target Company</h1>
-          <p className="text-theme-text-muted text-base md:text-lg leading-relaxed">
-            Choose a top tech company to tailor your interview. The AI adapts difficulty and
-            question style to mirror real interviews for that company.
+          <span className="clay-eyebrow">Choose your room</span>
+          <h1 className="clay-display mt-3 mb-3" style={{ fontSize: 'clamp(30px,4vw,46px)' }}>Select a target company</h1>
+          <p className="clay-ink-soft text-base md:text-lg">
+            Pick a top tech company to tailor your interview — the AI adapts difficulty and question style to mirror real interviews for that company.
           </p>
         </div>
 
@@ -54,14 +52,12 @@ const CompaniesPage = () => {
             <button
               key={c.id}
               onClick={() => go(c)}
-              className="group bg-theme-surface border border-theme-border hover:border-theme-accent hover:shadow-md transition-all rounded-2xl flex flex-col items-center justify-center gap-4 p-6 min-h-[180px] cursor-pointer"
+              className="clay-card group flex flex-col items-center justify-center gap-4 p-6 min-h-[170px] cursor-pointer transition-transform hover:-translate-y-1.5"
             >
-              <div className="h-16 flex items-center justify-center">
+              <span className="w-[62px] h-[62px] rounded-[18px] grid place-items-center clay-well">
                 <CompanyLogo company={c} />
-              </div>
-              <h3 className="text-sm font-semibold text-theme-text group-hover:text-theme-accent transition-colors">
-                {c.name}
-              </h3>
+              </span>
+              <h3 className="clay-display text-sm clay-ink group-hover:text-[var(--clay-violet)] transition-colors">{c.name}</h3>
             </button>
           ))}
         </div>

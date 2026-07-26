@@ -4,15 +4,15 @@
 
 /* ── AI Modern Layout Design System ── */
 @theme {
-  /* Soft cool-slate background; crisp white cards POP against it. */
-  --color-theme-bg: #E8EEF7;
-  --color-theme-surface: #FFFFFF;
-  --color-theme-surface-alt: #F1EDFB;  /* soft lavender wash for secondary cards */
-  --color-theme-border: #CFD6E2;
-  --color-theme-text: #0F172A;
-  --color-theme-text-muted: #475569;
-  --color-theme-accent: #4F46E5;        /* indigo — more character than flat blue */
-  --color-theme-accent-soft: #EEF0FF;   /* lavender tint of the accent */
+  /* Soft Clay palette — light lavender ground, molded violet accent. */
+  --color-theme-bg: #EEE7FF;
+  --color-theme-surface: #F6F0FF;
+  --color-theme-surface-alt: #EFE7FF;  /* soft lavender wash for secondary cards */
+  --color-theme-border: #DDD3F5;
+  --color-theme-text: #241A4D;
+  --color-theme-text-muted: #5A4F86;
+  --color-theme-accent: #6A3DF5;        /* clay violet */
+  --color-theme-accent-soft: #EDE6FF;   /* lavender tint of the accent */
 
   /* Dark Hero Colors - More Vibrant for Visibility */
   --color-hero-bg: #0D1117;

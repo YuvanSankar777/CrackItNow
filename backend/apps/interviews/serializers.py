@@ -95,3 +95,6 @@ class ExecuteCodeSerializer(serializers.Serializer):
     language = serializers.CharField(required=False, default='javascript')
     stdin = serializers.CharField(required=False, allow_blank=True, default='')
     is_submission = serializers.BooleanField(required=False, default=False)
+    # When False (the default), skip the Gemini complexity analysis. Running it
+    # per-test-case adds several seconds of latency the caller usually ignores.
+    analyze = serializers.BooleanField(required=False, default=False)

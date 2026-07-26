@@ -1,0 +1,109 @@
+/* ============================================================
+   CrackItNow — Soft Clay design system
+   Tactile, light-toned, molded surfaces. Layered on top of the
+   existing Tailwind theme; import AFTER index.css in main.jsx.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
+
+:root{
+  --clay-g1:#ECE4FF; --clay-g2:#FDE7DC; --clay-g3:#E4F3FF;
+  --clay-surface:#F1EAFF; --clay-surface-2:#F6F0FF; --clay-well:#E7DEFC;
+  --clay-violet:#6A3DF5; --clay-violet-deep:#5528DC; --clay-peri:#9B86FF;
+  --clay-coral:#FF7A45; --clay-mint:#1FC79A; --clay-sky:#49A9FF; --clay-gold:#FFB13D;
+  --clay-ink:#241A4D; --clay-ink-soft:#5A4F86; --clay-ink-faint:#8C83B4;
+  --clay-line:rgba(109,83,246,.14);
+
+  --clay-shadow: 9px 12px 26px rgba(112,80,208,.24), -7px -7px 18px rgba(255,255,255,.9),
+       inset -3px -3px 9px rgba(150,120,225,.15), inset 4px 4px 10px rgba(255,255,255,.72);
+  --clay-shadow-sm: 5px 6px 14px rgba(112,80,208,.20), -4px -4px 11px rgba(255,255,255,.85),
+       inset -2px -2px 6px rgba(150,120,225,.13), inset 3px 3px 7px rgba(255,255,255,.7);
+  --clay-press: inset 4px 4px 12px rgba(120,88,210,.3), inset -3px -3px 9px rgba(255,255,255,.8);
+  --clay-well-in: inset 4px 4px 10px rgba(120,88,210,.2), inset -3px -3px 8px rgba(255,255,255,.8);
+
+  --clay-r-lg:28px; --clay-r-md:20px; --clay-r-sm:14px;
+  --font-display:'Fredoka', ui-rounded, 'SF Pro Rounded', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Light lavender→peach ground applied app-wide */
+body.clay-app{
+  color:var(--clay-ink);
+  background:
+    radial-gradient(1100px 720px at 8% -10%, #FFFFFF 0%, transparent 52%),
+    radial-gradient(1000px 900px at 96% 2%, rgba(255,180,140,.5) 0%, transparent 46%),
+    radial-gradient(1000px 1000px at 84% 98%, rgba(120,200,255,.42) 0%, transparent 50%),
+    radial-gradient(900px 900px at 20% 82%, rgba(180,140,255,.36) 0%, transparent 52%),
+    linear-gradient(165deg,var(--clay-g1) 0%, #F0E9FF 42%, var(--clay-g2) 100%);
+  background-attachment:fixed;
+}
+
+/* ---- Typography ---- */
+/* Reset headings to ink (index.css forces a light text-fill on h1–h3). */
+body.clay-app h1, body.clay-app h2, body.clay-app h3, body.clay-app h4{
+  color:var(--clay-ink); -webkit-text-fill-color:currentColor;
+}
+body.clay-app .clay-grad-text{ -webkit-text-fill-color:transparent; }
+.clay-display{ font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; }
+.clay-eyebrow{ font-family:var(--font-display); font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--clay-violet); font-size:12px; }
+
+/* ---- Surfaces ---- */
+.clay-card{
+  background:linear-gradient(165deg,var(--clay-surface-2),var(--clay-surface));
+  border-radius:var(--clay-r-lg); box-shadow:var(--clay-shadow);
+}
+.clay-card-sm{
+  background:linear-gradient(160deg,var(--clay-surface-2),var(--clay-surface));
+  border-radius:var(--clay-r-md); box-shadow:var(--clay-shadow-sm);
+}
+.clay-well{ background:var(--clay-well); border-radius:var(--clay-r-md); box-shadow:var(--clay-well-in); }
+
+/* ---- Buttons ---- */
+.clay-btn{
+  font-family:var(--font-display); font-weight:600; font-size:15px; border:none; cursor:pointer;
+  padding:14px 26px; border-radius:16px; color:#fff; display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(145deg,#8158FF,var(--clay-violet-deep));
+  box-shadow:7px 9px 20px rgba(90,50,220,.34),-5px -5px 14px rgba(255,255,255,.7),inset 2px 2px 5px rgba(255,255,255,.35);
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.2), box-shadow .18s;
+}
+.clay-btn:hover{ transform:translateY(-2px); }
+.clay-btn:active{ transform:translateY(1px); box-shadow:var(--clay-press); }
+.clay-btn-ghost{
+  font-family:var(--font-display); font-weight:600; font-size:15px; border:none; cursor:pointer;
+  padding:14px 26px; border-radius:16px; color:var(--clay-violet); display:inline-flex; align-items:center; gap:8px;
+  background:linear-gradient(160deg,var(--clay-surface-2),var(--clay-surface));
+  box-shadow:6px 7px 16px rgba(112,80,208,.18),-5px -5px 13px rgba(255,255,255,.9),inset 2px 2px 5px rgba(255,255,255,.7);
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.2), box-shadow .18s;
+}
+.clay-btn-ghost:hover{ transform:translateY(-2px); }
+.clay-btn-ghost:active{ box-shadow:var(--clay-press); }
+.clay-btn-coral{ background:linear-gradient(145deg,#FF9366,#F0602C);
+  box-shadow:6px 8px 18px rgba(240,96,44,.34),-5px -5px 13px rgba(255,255,255,.6),inset 2px 2px 5px rgba(255,255,255,.35); }
+
+/* ---- Pills / chips / segments ---- */
+.clay-pill{
+  font-family:var(--font-display); font-weight:600; font-size:13px; color:var(--clay-ink-soft);
+  background:linear-gradient(160deg,var(--clay-surface-2),var(--clay-surface));
+  padding:11px 16px; border-radius:14px; box-shadow:var(--clay-shadow-sm); display:inline-flex; align-items:center; gap:8px;
+}
+.clay-seg{ cursor:pointer; transition:transform .15s, box-shadow .15s; }
+.clay-seg:active{ box-shadow:var(--clay-press); }
+.clay-seg-on{ color:#fff !important;
+  background:linear-gradient(150deg,var(--clay-violet),var(--clay-violet-deep)) !important;
+  box-shadow:5px 6px 14px rgba(90,50,220,.36),-4px -4px 11px rgba(255,255,255,.6),inset 2px 2px 5px rgba(255,255,255,.35) !important; }
+
+/* ---- Inputs ---- */
+.clay-input{
+  width:100%; font-family:var(--fb,system-ui); font-size:15px; color:var(--clay-ink);
+  padding:13px 16px; border:none; border-radius:14px; outline:none;
+  background:var(--clay-well); box-shadow:var(--clay-well-in);
+  transition:box-shadow .2s;
+}
+.clay-input::placeholder{ color:var(--clay-ink-faint); }
+.clay-input:focus{ box-shadow:var(--clay-well-in), 0 0 0 2px rgba(106,61,245,.4); }
+
+/* ---- helpers ---- */
+.clay-ink{ color:var(--clay-ink); } .clay-ink-soft{ color:var(--clay-ink-soft); } .clay-ink-faint{ color:var(--clay-ink-faint); }
+.clay-grad-text{ background:linear-gradient(110deg,var(--clay-violet),var(--clay-coral) 92%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+@keyframes clay-float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.clay-floaty{ animation:clay-float 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce){ .clay-floaty{ animation:none; } }

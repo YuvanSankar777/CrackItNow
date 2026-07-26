@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 
-function getColorClass(count) {
-  if (!count)      return 'bg-theme-bg border-theme-border';
-  if (count === 1) return 'bg-emerald-200 border-emerald-300';
-  if (count <= 3)  return 'bg-emerald-400 border-emerald-500';
-  if (count <= 5)  return 'bg-emerald-500 border-emerald-600';
-  return 'bg-emerald-600 border-emerald-700';
+const LEVELS = ['#E4DBF8', '#CFC0F2', '#B49CEC', '#8E68E4', '#6A3DF5'];
+function levelColor(count) {
+  if (!count)      return LEVELS[0];
+  if (count === 1) return LEVELS[1];
+  if (count <= 3)  return LEVELS[2];
+  if (count <= 5)  return LEVELS[3];
+  return LEVELS[4];
 }
 
 const ActivityHeatmap = ({ activity = {} }) => {
@@ -43,16 +44,17 @@ const ActivityHeatmap = ({ activity = {} }) => {
               <div
                 key={cell.date}
                 title={`${cell.date}: ${cell.count} session${cell.count !== 1 ? 's' : ''}`}
-                className={`w-[11px] h-[11px] rounded-[2px] border cursor-default shrink-0 ${getColorClass(cell.count)}`}
+                className="w-[11px] h-[11px] rounded-[3px] cursor-default shrink-0"
+                style={{ background: levelColor(cell.count), boxShadow: 'inset 1px 1px 2px rgba(120,88,210,.15)' }}
               />
             ))}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 text-[10px] text-theme-text-muted">
+      <div className="flex items-center gap-2 text-[10px] clay-ink-faint">
         <span>Less</span>
-        {['bg-theme-bg border-theme-border', 'bg-emerald-200 border-emerald-300', 'bg-emerald-400 border-emerald-500', 'bg-emerald-500 border-emerald-600', 'bg-emerald-600 border-emerald-700'].map((c, i) => (
-          <div key={i} className={`w-[11px] h-[11px] rounded-[2px] border ${c}`} />
+        {LEVELS.map((c, i) => (
+          <div key={i} className="w-[11px] h-[11px] rounded-[3px]" style={{ background: c }} />
         ))}
         <span>More</span>
       </div>

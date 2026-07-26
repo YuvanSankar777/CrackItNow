@@ -7,7 +7,12 @@ export const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  // CrackItNow uses the light "Soft Clay" theme. Default to light and migrate
+  // any previously-stored dark preference so the whole app stays consistent.
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    return stored === 'light' ? 'light' : 'light';
+  });
 
   useEffect(() => {
     const root = document.documentElement;
