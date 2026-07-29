@@ -61,6 +61,47 @@ def _get_company_prompt_additive(company: str) -> str:
         return "You must focus heavily on Databases, SQL, indexing nuances, and transactional guarantees."
     elif 'salesforce' in company_lower:
         return "You must focus on Backend engineering, robust APIs, cloud architecture, and multi-tenant system design."
+
+    # ── Service-based / mass-recruiter style (Hexaware, TCS, Infosys, etc.) ──
+    # These interviews are theory-heavy CS fundamentals + scenario-based OOP
+    # coding + a strong HR round — very different from FAANG DSA rounds.
+    service_based = ('hexaware', 'tcs', 'infosys', 'wipro', 'cognizant', 'accenture', 'capgemini', 'hcl', 'tech mahindra', 'ltimindtree', 'mindtree')
+    if any(name in company_lower for name in service_based):
+        return (
+            "This is a SERVICE-BASED / campus-placement style interview (e.g. Hexaware, TCS, Infosys, Wipro, Cognizant, Accenture). "
+            "Match that real style closely. Cover a MIX of these areas, one concept at a time with natural follow-ups:\n"
+            "1) CS FUNDAMENTALS THEORY: OOP four pillars (abstraction, encapsulation, inheritance, polymorphism), abstract class vs interface, "
+            "access modifiers; Core Java (JVM, exception handling — try/catch, throw vs throws, why it's used; Java 8 features; Collections with real-time examples; "
+            "Spring Boot annotations); DBMS (normalization, SQL, JDBC/CRUD); Operating Systems (deadlock, kernel, storage types); "
+            "Computer Networks (OSI layers, topologies); SDLC.\n"
+            "2) SCENARIO-BASED OOP CODING to implement in the compiler: e.g. model an Employee with role-based discount using interface + abstraction; "
+            "an ATM using encapsulation; hierarchical inheritance. Also classic problems: second largest element in an array, character occurrence count, "
+            "merge two lists and print duplicate elements.\n"
+            "3) Keep it beginner-to-mid friendly and practical. Occasionally ask about the candidate's projects and internships."
+        )
+    return ""
+
+
+def _topic_focus(interview_type: str) -> str:
+    """Round-specific guidance so 'technical', 'HR', etc. produce the right style."""
+    t = (interview_type or '').lower()
+    if t == 'behavioral':
+        return (
+            "This is an HR / BEHAVIORAL round — NO coding. Ask natural, one-at-a-time questions such as: a self-introduction; about family/background; "
+            "why this company; strengths and weaknesses; willingness to relocate; comfort with a service agreement / bond; how you handle team conflict or "
+            "pressure; what you do apart from academics; where you see yourself in 5 years. Ask thoughtful FOLLOW-UP questions based on the candidate's answer."
+        )
+    if t == 'technical':
+        return (
+            "This is a CS-FUNDAMENTALS THEORY round. Ask conceptual questions across OOP, Core Java, DBMS, Operating Systems, Computer Networks, and SDLC. "
+            "Prefer clear 'explain / compare / define' questions (e.g. four pillars of OOP, abstract class vs interface, normalization, deadlock, OSI layers). "
+            "You MAY include ONE scenario-based OOP coding implementation, but most questions should be spoken theory (is_coding false)."
+        )
+    if t == 'mixed':
+        return (
+            "This is a MIXED round: blend a brief self-introduction, CS-fundamentals theory (OOP/Java/DBMS/OS/CN/SDLC), at least one scenario-based coding "
+            "implementation, and a couple of HR questions (relocation, service agreement, teamwork). Vary between spoken and coding questions."
+        )
     return ""
 
 
@@ -219,8 +260,10 @@ def _coding_json_shape() -> str:
 
 def generate_first_question(role: str, level: str, interview_type: str, difficulty: str, company: str = None) -> dict:
     """Generate the opening question for a new interview session."""
-    # Decide whether to make the first question coding or behavioral based on interview_type.
-    wants_coding = interview_type in ('technical', 'coding', 'mixed')
+    # Only a pure 'coding' round opens with a coding problem. 'technical' (theory),
+    # 'mixed' and 'behavioral' rounds open conversationally (intro/theory), then the
+    # AI can introduce coding on later questions where appropriate.
+    wants_coding = interview_type == 'coding'
 
     try:
         _ensure_configured()
@@ -243,6 +286,7 @@ Candidate Profile:
 
 Your task: Generate the very first interview question to open the conversation naturally.
 Be warm, professional, and sound like a real human interviewer.
+{_topic_focus(interview_type)}
 {_get_company_prompt_additive(company)}
 {contract}
 
@@ -323,6 +367,7 @@ Candidate's Answer:
 Your tasks:
 1. Evaluate the candidate's answer honestly and constructively
 2. {"Generate a BRAND NEW interview question that has not been asked above. Do not greet the candidate again — skip openers like 'Hello' or 'Let's start' — just ask the next question directly." if not is_last else "This is the LAST question, so set next_question to null"}
+{_topic_focus(interview_type)}
 {_get_company_prompt_additive(company)}
 
 Adaptive difficulty rules:

@@ -8,6 +8,14 @@ const SetupPageNew = () => {
   const company = location.state?.company || null;
   const [loading, setLoading] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
+  const [round, setRound] = useState('mixed');
+
+  const rounds = [
+    { id: 'mixed',      label: 'Technical + HR', description: 'Theory, scenario coding & HR' },
+    { id: 'technical',  label: 'CS Fundamentals', description: 'OOP, DBMS, OS, CN, Java theory' },
+    { id: 'coding',     label: 'Coding',          description: 'Problems in the online compiler' },
+    { id: 'behavioral', label: 'HR / Behavioral', description: 'Intro, projects, bond, relocation' },
+  ];
 
   // If the user lands on /setup without first picking a company, bounce them
   // back to /companies so the next screen has clear context.
@@ -27,7 +35,7 @@ const SetupPageNew = () => {
       const { data } = await interviewAPI.start({
         role: 'fullstack',
         level: 'mid',
-        type: 'coding',
+        type: round,
         difficulty,
         max_questions: 5,
         company: company,
@@ -62,6 +70,25 @@ const SetupPageNew = () => {
         </div>
 
         <div className="clay-card p-8">
+          <h2 className="clay-display text-xl mb-1">Interview round</h2>
+          <p className="text-sm clay-ink-soft mb-5">Pick which kind of round you want to practice.</p>
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {rounds.map((r) => {
+              const on = round === r.id;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => setRound(r.id)}
+                  className={`clay-seg p-4 rounded-[18px] text-left ${on ? 'clay-seg-on' : ''}`}
+                  style={!on ? { background: 'linear-gradient(160deg,var(--clay-surface-2),var(--clay-surface))', boxShadow: 'var(--clay-shadow-sm)' } : undefined}
+                >
+                  <div className="clay-display mb-1" style={{ color: on ? '#fff' : 'var(--clay-ink)' }}>{r.label}</div>
+                  <div className="text-xs" style={{ color: on ? 'rgba(255,255,255,.85)' : 'var(--clay-ink-faint)' }}>{r.description}</div>
+                </button>
+              );
+            })}
+          </div>
+
           <h2 className="clay-display text-xl mb-1">Select difficulty</h2>
           <p className="text-sm clay-ink-soft mb-5">Pick how challenging the problems should be.</p>
 

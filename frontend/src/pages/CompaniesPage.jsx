@@ -15,6 +15,14 @@ const companies = [
   { id: 'IBM',        name: 'IBM',        domain: 'ibm.com',      logoUrl: '/ibm-logo.svg', wide: true },
   { id: 'Oracle',     name: 'Oracle',     domain: 'oracle.com' },
   { id: 'Salesforce', name: 'Salesforce', domain: 'salesforce.com' },
+  // Service-based / campus-placement recruiters (theory + scenario coding + HR)
+  { id: 'Hexaware',   name: 'Hexaware',   domain: 'hexaware.com' },
+  { id: 'TCS',        name: 'TCS',        domain: 'tcs.com' },
+  { id: 'Infosys',    name: 'Infosys',    domain: 'infosys.com' },
+  { id: 'Wipro',      name: 'Wipro',      domain: 'wipro.com' },
+  { id: 'Cognizant',  name: 'Cognizant',  domain: 'cognizant.com' },
+  { id: 'Accenture',  name: 'Accenture',  domain: 'accenture.com' },
+  { id: 'Capgemini',  name: 'Capgemini',  domain: 'capgemini.com' },
 ];
 
 const CompanyLogo = ({ company }) => {
